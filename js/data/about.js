@@ -11,8 +11,7 @@
 
 /** 作者・クレジット */
 export const CREDITS = {
-  author: 'おかだ',
-  github: 'Okarin-netizen',
+  author: '{技術科|ぎじゅつか}　{岡田|おかだ}',
 };
 
 /** @type {ChangelogEntry[]} 新しい順 */

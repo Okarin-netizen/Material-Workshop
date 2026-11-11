@@ -24,7 +24,7 @@ export function renderAbout(app) {
         h('dt', {}, UI.about.version),
         h('dd', {}, APP_VERSION),
         h('dt', {}, UI.about.author),
-        h('dd', {}, fill(UI.about.authorValue, { author: CREDITS.author, github: CREDITS.github })),
+        h('dd', {}, CREDITS.author),
       ),
       h('p', { class: 'about-note' }, UI.about.note),
       h('h2', { class: 'about-heading' }, UI.about.changelog),
