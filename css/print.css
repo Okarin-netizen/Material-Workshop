@@ -1,0 +1,89 @@
+/* 印刷（まとめ画面を A4 1枚に収める）。index.html で media="print" として読み込む。 */
+
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
+html,
+body {
+  background: #ffffff !important;
+  font-size: 10.5pt;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+#app {
+  display: block;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* 画面の操作部分は印刷しない */
+.app-header,
+.banner,
+.no-print {
+  display: none !important;
+}
+
+.print-only {
+  display: block !important;
+}
+
+.screen,
+.screen--page {
+  display: block;
+  padding: 0;
+  overflow: visible !important;
+}
+
+.sheet {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+}
+
+.sheet__title {
+  font-size: 16pt;
+}
+
+.identity {
+  margin: 6pt 0 2pt;
+}
+
+.identity__input {
+  min-height: 0;
+  padding: 0 4pt;
+  background: none;
+}
+
+.record-table {
+  font-size: 9pt;
+  line-height: 1.35;
+  page-break-inside: avoid;
+}
+
+.record-table th,
+.record-table td {
+  padding: 3pt 4pt;
+}
+
+.record-table tr {
+  page-break-inside: avoid;
+}
+
+/* 印刷ではふりがなを少し小さくして、1枚に収まりやすくする */
+rt {
+  font-size: 0.45em;
+}
+
+.reflection__mirror {
+  min-height: 34mm;
+  padding: 4pt 6pt;
+  border: 1.5px solid #8a6a48;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}

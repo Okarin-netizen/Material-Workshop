@@ -1,0 +1,152 @@
+/* 画面全体の配置：ヘッダー、ステップ表示、3列。
+   幅 1024px 以上（かつ高さ 540px 以上）では、画面の高さにぴったり収めて3列にする。
+   それより小さい画面では縦に積み、ページ全体をスクロールする。 */
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ── ヘッダー ─────────────────────────────── */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--header-height);
+  padding: 4px 16px;
+  background: var(--brown);
+  border-bottom: 4px solid var(--brown-dark);
+  color: #ffffff;
+  flex-wrap: wrap;
+}
+
+.app-logo {
+  min-height: var(--tap);
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--yellow);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+.stage-pill {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: #fff3d6;
+  color: var(--brown);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stage-pill__number {
+  margin-right: 4px;
+  color: var(--orange-dark);
+}
+
+.header-nav {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+/* ── 画面（main） ─────────────────────────── */
+
+.screen {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.screen--workshop {
+  padding: 6px 12px 12px;
+  gap: 6px;
+}
+
+.screen--page {
+  padding: 16px;
+}
+
+/* ── 3列 ──────────────────────────────────── */
+
+.three-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.3fr);
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.three-columns--result {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1.2fr);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--cream);
+  border: 4px solid var(--brown);
+  border-radius: var(--radius-card);
+  box-shadow: 0 5px 0 rgba(60, 35, 10, 0.28);
+}
+
+/* 中身が多いときだけ、カードの中でスクロールする（ページ全体はスクロールさせない） */
+.panel__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px; /* フォーカスの枠が切れないように */
+  margin: -4px;
+}
+
+/* 大きい画面：画面の高さに収める */
+@media (min-width: 1024px) and (min-height: 540px) {
+  #app {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .screen--workshop {
+    overflow: hidden;
+  }
+
+  .screen--page {
+    overflow: auto;
+  }
+
+  .three-columns > .panel {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+/* 小さい画面：縦に積む */
+@media (max-width: 1023px) {
+  .three-columns,
+  .three-columns--result {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-logo {
+    font-size: 19px;
+  }
+
+  .stage-pill {
+    order: 3;
+    flex-basis: 100%;
+  }
+}

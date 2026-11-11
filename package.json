@@ -1,0 +1,10 @@
+{
+  "name": "material-koubou",
+  "private": true,
+  "description": "中学1年 技術「材料と加工の技術」学習用ゲーム（ビルド不要。このファイルはテストの実行用）",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "e2e": "node tests/e2e/playthrough.e2e.cjs"
+  }
+}
