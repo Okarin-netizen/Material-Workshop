@@ -1,7 +1,8 @@
-// タイトル画面：はじめる／つづきから／遊び方／最初からやり直す。
+// タイトル画面：はじめる／つづきから／遊び方／最初からやり直す／このアプリについて（バージョン）。
 
 import { h, fill } from '../dom.js';
 import { UI } from '../../data/uiText.js';
+import { APP_VERSION } from '../../data/about.js';
 import { renderProductArt } from '../art/index.js';
 
 /** タイトルの絵に使う依頼と設計（見た目だけ。進行には関係しない） */
@@ -43,7 +44,13 @@ export function renderTitle(app) {
         ),
         h('button', { type: 'button', class: 'btn btn--sub btn--big', dataset: { focusKey: 'title-howto' }, onClick: () => app.navigate('howto') }, UI.title.howto),
       ),
-      h('button', { type: 'button', class: 'btn btn--text', dataset: { focusKey: 'title-reset' }, onClick: () => app.confirmReset() }, UI.title.reset),
+      h(
+        'div',
+        { class: 'title-links' },
+        h('button', { type: 'button', class: 'btn btn--text', dataset: { focusKey: 'title-reset' }, onClick: () => app.confirmReset() }, UI.title.reset),
+        h('button', { type: 'button', class: 'btn btn--text', dataset: { focusKey: 'title-about' }, onClick: () => app.navigate('about') }, UI.title.about),
+      ),
+      h('p', { class: 'title-version' }, fill(UI.title.version, { version: APP_VERSION })),
     ),
   );
 }
