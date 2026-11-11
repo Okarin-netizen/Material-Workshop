@@ -7,6 +7,7 @@ import { PROCESSES } from './data/processes.js';
 import { REINFORCEMENTS } from './data/reinforcements.js';
 import { REQUESTS, RANKS } from './data/requests.js';
 import { UI } from './data/uiText.js';
+import { CHANGELOG } from './data/about.js';
 import { buildCatalog } from './core/rules.js';
 import { createProgress } from './core/gameState.js';
 import { loadProgress, saveProgress, clearProgress } from './core/storage.js';
@@ -22,8 +23,9 @@ import { renderBoard } from './ui/screens/board.js';
 import { renderWorkshop } from './ui/screens/workshop.js';
 import { renderZukan } from './ui/screens/zukan.js';
 import { renderSummary } from './ui/screens/summary.js';
+import { renderAbout } from './ui/screens/about.js';
 
-/** @typedef {'title'|'howto'|'board'|'workshop'|'zukan'|'summary'} ScreenName */
+/** @typedef {'title'|'howto'|'board'|'workshop'|'zukan'|'summary'|'about'} ScreenName */
 
 /** 画面の名前と、その画面を作る関数 */
 const SCREENS = {
@@ -33,6 +35,7 @@ const SCREENS = {
   workshop: renderWorkshop,
   zukan: renderZukan,
   summary: renderSummary,
+  about: renderAbout,
 };
 
 /**
@@ -54,7 +57,7 @@ const SCREENS = {
 
 const data = { materials: MATERIALS, processes: PROCESSES, reinforcements: REINFORCEMENTS, requests: REQUESTS, ranks: RANKS };
 const catalog = buildCatalog(data);
-const dataProblems = validateData({ ...data, uiText: [UI] }, catalog, { artNames: Object.keys(ART_DRAWERS) });
+const dataProblems = validateData({ ...data, uiText: [UI], changelog: CHANGELOG }, catalog, { artNames: Object.keys(ART_DRAWERS) });
 let saveWorks = true;
 let previousScreen = 'title';
 let lastViewKey = '';

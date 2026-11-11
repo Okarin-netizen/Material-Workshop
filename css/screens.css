@@ -511,7 +511,21 @@
   gap: 12px;
 }
 
-/* ── ふつうのページ（遊び方・依頼ボード・図鑑） ── */
+.title-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+}
+
+.title-version {
+  margin-top: -6px;
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── ふつうのページ（遊び方・依頼ボード・図鑑・このアプリについて） ── */
 
 .page-card {
   width: min(1180px, 100%);
@@ -567,6 +581,78 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+/* このアプリについて */
+.about-card {
+  width: min(760px, 100%);
+}
+
+.about-info {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 10px 0;
+  padding: 10px 14px;
+  border: 3px solid var(--brown-soft);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.about-info dt {
+  color: var(--text-sub);
+  font-weight: 700;
+}
+
+.about-info dd {
+  margin: 0;
+  font-weight: 800;
+}
+
+.about-note {
+  color: var(--text-sub);
+  font-weight: 600;
+}
+
+.about-heading {
+  margin: 14px 0 6px;
+  font-size: 19px;
+  color: var(--orange-dark);
+}
+
+.changelog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+}
+
+.changelog__entry {
+  padding: 10px 14px;
+  border: 3px solid var(--brown-soft);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.changelog__version {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 16px;
+  color: var(--brown);
+}
+
+.changelog__date {
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.changelog__changes {
+  list-style: disc;
+  padding-left: 1.3em;
+  margin-top: 4px;
 }
 
 /* 依頼ボード */

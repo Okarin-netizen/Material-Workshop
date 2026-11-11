@@ -1,5 +1,6 @@
 {
   "name": "material-koubou",
+  "version": "1.1.0",
   "private": true,
   "description": "中学1年 技術「材料と加工の技術」学習用ゲーム（ビルド不要。このファイルはテストの実行用）",
   "type": "module",
