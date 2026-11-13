@@ -8,7 +8,7 @@ export const TRAIT_MAX = 5;
 export const METRIC_MAX = 100;
 
 /** 星の基準。全テスト合格で★1、さらに得点がこの値以上で★2・★3 */
-export const STAR_SCORE = Object.freeze({ two: 70, three: 85 });
+export const STAR_SCORE = Object.freeze({ two: 80, three: 85 });
 
 /**
  * コスト指標の計算に使う値。

@@ -6,7 +6,7 @@
 //   3. 指標 = 依頼の計算式（特性の重みつき平均）を 0〜100 にし、加工・工夫の指標効果を足す
 //      コストだけは「費用 ÷ 予算」から計算する
 //   4. テスト（必須条件）を判定する
-//   5. 得点 = 指標の重みつき平均。星は テスト全合格 → ★1、70点以上 → ★2、85点以上 → ★3
+//   5. 得点 = 指標の重みつき平均。星は テスト全合格 → ★1、80点以上 → ★2、85点以上 → ★3
 
 import { TRAIT_MAX, METRIC_MAX, STAR_SCORE, COST_SCORE } from './constants.js';
 import { findRequestReinforcement, materialKind } from './rules.js';

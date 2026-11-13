@@ -134,6 +134,9 @@ function checkPart(request, part, catalog, report) {
     if (!part.processIds.includes(processId)) report(where, `processMetricEffects の「${processId}」は選べる加工方法にありません`);
     checkMetricKeys(where, effects, report);
   }
+  for (const processId of Object.keys(part.processNotes ?? {})) {
+    if (!part.processIds.includes(processId)) report(where, `processNotes の「${processId}」は選べる加工方法にありません`);
+  }
 }
 
 function checkRequestReinforcements(request, partIds, catalog, report) {

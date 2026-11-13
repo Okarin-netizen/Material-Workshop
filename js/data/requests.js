@@ -24,6 +24,9 @@
  *           この依頼でだけ材料の特性を上書きする（例：缶は1度開けたら閉められない）
  * @property {Record<string, Partial<Record<import('./traits.js').MetricId, number>>>} [processMetricEffects]
  *           この依頼でだけ、加工方法が指標に与える増減
+ * @property {Record<string, {good?: string, bad?: string}>} [processNotes]
+ *           この依頼での加工方法のよい点（◯）と注意点（△）。加工カードに出す。
+ *           processMetricEffects で点数に差をつけたら、その理由をここに書く
  */
 
 /**
@@ -239,8 +242,21 @@ export const REQUESTS = [
         id: 'rail',
         name: '{手|て}すり',
         size: 4,
-        materialIds: ['steel', 'stainless', 'aluminum', 'sugi'],
+        materialIds: ['steel', 'stainless', 'aluminum', 'aluminumAlloy'],
         processIds: ['bend', 'weld', 'cast', 'sawPlane'],
+        // 加工方法ごとに得と損をつける（どれを選んでも同じ点にならないように）
+        processMetricEffects: {
+          bend: { durability: 10 },
+          weld: { strength: 10 },
+          cast: { strength: -20 },
+          sawPlane: { strength: -10, durability: -15 },
+        },
+        processNotes: {
+          bend: { good: '1{本|ぽん}のパイプを{曲|ま}げるので、つなぎ{目|め}が{少|すく}なく{水|みず}が{入|はい}りにくい', bad: '{細|こま}かい{形|かたち}は{作|つく}りにくい' },
+          weld: { good: 'つなぎ{目|め}を{溶|と}かして{一体|いったい}にするので{強|つよ}い', bad: '{加工費|かこうひ}が{高|たか}い' },
+          cast: { good: '{複雑|ふくざつ}な{形|かたち}も{作|つく}れる', bad: '{長|なが}い{手|て}すりを{型|かた}で{作|つく}ると、もろくて{折|お}れやすい' },
+          sawPlane: { good: '{加工費|かこうひ}が{安|やす}い', bad: '{短|みじか}い{部品|ぶひん}をつなぐので、つなぎ{目|め}から{弱|よわ}くなり、{傷|いた}みやすい' },
+        },
       },
     ],
     reinforcements: [
@@ -299,8 +315,9 @@ export const REQUESTS = [
       { title: '{表面|ひょうめん}を{保護|ほご}する', text: '{塗装|とそう}などの{表面処理|ひょうめんしょり}で、きず・{汚|よご}れ・さびを{防|ふせ}ぎ、{耐久性|たいきゅうせい}を{高|たか}める。', page: 'p.52〜53' },
     ],
     whatIf: [
-      { part: 'rail', material: 'steel', text: '{安|やす}くて{強|つよ}いが、{水|みず}にぬれるとさびやすい。{塗装|とそう}で{保護|ほご}すれば{使|つか}えるが、{塗装|とそう}がはがれるとさびてしまう。' },
+      { part: 'rail', material: 'aluminumAlloy', text: 'アルミニウム{合金|ごうきん}は{軽|かる}くて{強|つよ}い。{塗装|とそう}などの{表面処理|ひょうめんしょり}をすれば、{屋外|おくがい}の{手|て}すりにも{使|つか}える。ステンレスとは{別|べつ}の{答|こた}えになる。' },
       { part: 'rail', material: 'stainless', text: '{鉄|てつ}にクロムやニッケルを{加|くわ}えた{合金|ごうきん}なので、{塗装|とそう}しなくてもさびにくい。' },
+      { part: 'rail', material: 'steel', text: '{安|やす}くて{強|つよ}いが、{水|みず}にぬれるとさびやすい。{塗装|とそう}で{保護|ほご}すれば{使|つか}えるが、{塗装|とそう}がはがれるとさびてしまう。' },
     ],
   },
 
@@ -330,6 +347,11 @@ export const REQUESTS = [
         processIds: ['cast', 'sawPlane', 'heatBend'],
         // 型を使うと、にぎりやすい複雑な形も同じ形で大量に作れる（p.35 鋳造, p.36 型を使った大量生産）
         processMetricEffects: { cast: { usability: 15 } },
+        processNotes: {
+          cast: { good: 'にぎりやすい{形|かたち}を、{型|かた}で{同|おな}じように{大量|たいりょう}に{作|つく}れる', bad: '{型|かた}を{作|つく}る{費用|ひよう}がかかる' },
+          sawPlane: { good: '{型|かた}がなくても{作|つく}れる', bad: '1{本|ぽん}ずつ{削|けず}るので、{大量生産|たいりょうせいさん}に{向|む}かない' },
+          heatBend: { good: '{簡単|かんたん}な{道具|どうぐ}で{曲|ま}げられる', bad: '{曲|ま}げた{形|かたち}しか{作|つく}れない' },
+        },
       },
     ],
     reinforcements: [
@@ -518,6 +540,16 @@ export const REQUESTS = [
         size: 3,
         materialIds: ['stainless', 'steel', 'sugi', 'aluminumAlloy'],
         processIds: ['weld', 'bend', 'sawPlane'],
+        processMetricEffects: {
+          weld: { strength: 8 },
+          bend: { durability: 8 },
+          sawPlane: { strength: -15 },
+        },
+        processNotes: {
+          weld: { good: '{脚|あし}のつなぎ{目|め}を{一体|いったい}にするので{強|つよ}い', bad: '{加工費|かこうひ}が{高|たか}い' },
+          bend: { good: 'パイプを{曲|ま}げてつなぎ{目|め}を{減|へ}らすので、{雨|あめ}に{強|つよ}い', bad: '{曲|ま}げた{形|かたち}しか{作|つく}れない' },
+          sawPlane: { good: '{加工費|かこうひ}が{安|やす}い', bad: '{切|き}った{部品|ぶひん}をボルトでつなぐので、ぐらつきやすい' },
+        },
       },
     ],
     reinforcements: [
@@ -556,7 +588,7 @@ export const REQUESTS = [
         id: 'load',
         name: '{荷重|かじゅう}テスト（{大人|おとな}3{人|にん}）',
         condition: '{大人|おとな}3{人|にん}が{座|すわ}ってもぐらつかない',
-        check: { metric: 'strength', min: 70 },
+        check: { metric: 'strength', min: 75 },
         pass: '{大人|おとな}3{人|にん}が{座|すわ}っても、ぐらつかなかった',
         fail: '{大人|おとな}3{人|にん}が{座|すわ}ると、ぐらついた',
         failReasons: [
@@ -622,6 +654,16 @@ export const REQUESTS = [
         size: 1,
         materialIds: ['glass', 'steel', 'aluminumAlloy', 'pet'],
         processIds: ['blow', 'press', 'cast'],
+        processMetricEffects: {
+          blow: { environment: 10, usability: 5 },
+          press: { usability: -10 },
+          cast: { environment: -10, usability: -10 },
+        },
+        processNotes: {
+          blow: { good: '{中|なか}が{空|から}の{形|かたち}を{薄|うす}く{作|つく}れるので、{材料|ざいりょう}が{少|すく}なくてすむ', bad: '{型|かた}が{必要|ひつよう}' },
+          press: { good: '{缶|かん}の{作|つく}り{方|かた}。{金属|きんぞく}の{板|いた}を{速|はや}く{形|かたち}にできる', bad: 'ペットボトルや{瓶|びん}の、{細|ほそ}い{口|くち}の{形|かたち}は{作|つく}りにくい' },
+          cast: { good: '{複雑|ふくざつ}な{形|かたち}を{作|つく}れる', bad: '{中|なか}が{空|から}の{容器|ようき}は{厚|あつ}く{重|おも}くなり、{材料|ざいりょう}が{多|おお}くなる' },
+        },
         materialNotes: {
           glass: '→ {瓶|びん}になる',
           steel: '→ スチール{缶|かん}になる',
@@ -750,6 +792,16 @@ export const REQUESTS = [
         size: 3,
         materialIds: ['aluminumAlloy', 'aluminum', 'steel', 'stainless'],
         processIds: ['weld', 'cast', 'sawPlane'],
+        processMetricEffects: {
+          weld: { strength: 10 },
+          cast: { strength: -10, usability: -10 },
+          sawPlane: { strength: -5, environment: -15 },
+        },
+        processNotes: {
+          weld: { good: 'パイプどうしを{溶|と}かしてつなぐので、{軽|かる}くて{強|つよ}いフレームになる', bad: '{加工費|かこうひ}が{高|たか}い' },
+          cast: { good: '{形|かたち}を{一度|いちど}に{作|つく}れる', bad: '{中|なか}を{空洞|くうどう}にしにくく、{重|おも}くてもろい' },
+          sawPlane: { good: '{加工費|かこうひ}が{安|やす}い', bad: '{大|おお}きな{塊|かたまり}から{削|けず}り{出|だ}すので、{材料|ざいりょう}のむだが{多|おお}い' },
+        },
       },
     ],
     reinforcements: [
@@ -779,7 +831,7 @@ export const REQUESTS = [
         id: 'strong',
         name: '{段差|だんさ}テスト',
         condition: '{段差|だんさ}を{走|はし}っても{曲|ま}がらない',
-        check: { metric: 'strength', min: 70 },
+        check: { metric: 'strength', min: 80 },
         pass: '{段差|だんさ}を{走|はし}っても、フレームは{曲|ま}がらなかった',
         fail: 'フレームが{曲|ま}がってしまった',
         failReasons: [
@@ -842,7 +894,12 @@ export const REQUESTS = [
         materialIds: ['steel', 'aluminumAlloy', 'acrylic'],
         processIds: ['forge', 'cast', 'sawPlane'],
         // 鍛造はたたいて強度を高める（日本刀や包丁に使われる, p.35）
-        processMetricEffects: { forge: { strength: 10 } },
+        processMetricEffects: { forge: { strength: 10 }, cast: { strength: -10 } },
+        processNotes: {
+          forge: { good: 'たたいて{強度|きょうど}を{高|たか}める。{日本刀|にほんとう}や{包丁|ほうちょう}の{作|つく}り{方|かた}', bad: '{手間|てま}と{加工費|かこうひ}がかかる' },
+          cast: { good: '{同|おな}じ{形|かたち}をたくさん{作|つく}れる', bad: '{型|かた}で{固|かた}めただけの{刃|は}はもろい' },
+          sawPlane: { good: '{加工費|かこうひ}が{安|やす}い', bad: '{材料|ざいりょう}の{強|つよ}さはそのまま。{強度|きょうど}は{上|あ}がらない' },
+        },
       },
     ],
     reinforcements: [

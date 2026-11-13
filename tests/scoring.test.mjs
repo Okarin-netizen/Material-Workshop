@@ -46,8 +46,15 @@ for (const request of DATA.requests) {
       });
     }
 
+    for (const alt of answers.alt ?? []) {
+      test(`別の道「${alt.label}」でも★3`, () => {
+        const result = evaluateDesign(request, designOf(alt), CATALOG);
+        assert.equal(result.stars, 3, `得点 ${result.score}`);
+      });
+    }
+
     test('答えの設計は、ゲームの中で実際に選べる組み合わせになっている', () => {
-      for (const answer of [answers.model, ...answers.wrong, ...answers.near]) {
+      for (const answer of [answers.model, ...answers.wrong, ...answers.near, ...(answers.alt ?? [])]) {
         const design = designOf(answer);
         assert.deepEqual(pruneDesign(request, design, CATALOG), design, `「${answer.label}」に選べないものがある`);
       }
@@ -110,10 +117,10 @@ describe('得点の計算', () => {
     assert.equal(costMetric(1001, 1000), 0);
   });
 
-  test('星：不合格なら0、70点で★2、85点で★3', () => {
+  test('星：不合格なら0、80点で★2、85点で★3', () => {
     assert.equal(starsFor(false, 99), 0);
-    assert.equal(starsFor(true, 69), 1);
-    assert.equal(starsFor(true, 70), 2);
+    assert.equal(starsFor(true, 79), 1);
+    assert.equal(starsFor(true, 80), 2);
     assert.equal(starsFor(true, 85), 3);
   });
 
@@ -133,4 +140,21 @@ describe('得点の計算', () => {
     const item = pickWhatIf(request, { materials: { seat: 'sugi', frame: 'stainless' }, processes: {}, reinforcements: [] });
     assert.equal(item.material, 'steel');
   });
+});
+
+describe('加工方法の選び方で得点が変わる', () => {
+  // 使える加工方法が2つ以上ある部品では、模範解の材料のまま加工だけを変えると5点以上の差が出る
+  // （どれを選んでも同じ点だと、加工方法を選ぶ意味がなくなるため）
+  for (const request of DATA.requests) {
+    const model = designOf(ANSWERS[request.id].model);
+    for (const part of request.parts) {
+      const material = CATALOG.materials.get(model.materials[part.id]);
+      const usable = part.processIds.filter((id) => processAvailability(CATALOG.processes.get(id), material).ok);
+      if (usable.length < 2) continue;
+      test(`依頼${request.number}の${part.id}（${material.id}）`, () => {
+        const scores = usable.map((id) => evaluateDesign(request, { ...model, processes: { ...model.processes, [part.id]: id } }, CATALOG).score);
+        assert.ok(Math.max(...scores) - Math.min(...scores) >= 5, `得点：${scores.join(', ')}`);
+      });
+    }
+  }
 });
