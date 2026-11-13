@@ -4,6 +4,7 @@ import { h, fill } from '../dom.js';
 import { UI } from '../../data/uiText.js';
 import { APP_VERSION } from '../../data/about.js';
 import { renderProductArt } from '../art/index.js';
+import { startRequest } from '../../core/gameState.js';
 
 /** タイトルの絵に使う依頼と設計（見た目だけ。進行には関係しない） */
 const TITLE_ART = { requestId: 'stationBench', design: { materials: { seat: 'sugi', frame: 'stainless' }, processes: {}, reinforcements: ['triangle'] } };
@@ -29,7 +30,7 @@ export function renderTitle(app) {
       h(
         'div',
         { class: 'title-buttons' },
-        h('button', { type: 'button', class: 'btn btn--primary btn--big', dataset: { focusKey: 'title-start' }, onClick: () => app.navigate('board') }, UI.title.start),
+        h('button', { type: 'button', class: 'btn btn--primary btn--big', dataset: { focusKey: 'title-start' }, onClick: () => start(app) }, UI.title.start),
         h(
           'button',
           {
@@ -53,4 +54,19 @@ export function renderTitle(app) {
       h('p', { class: 'title-version' }, fill(UI.title.version, { version: APP_VERSION })),
     ),
   );
+}
+
+/**
+ * 「はじめる」。はじめての人（記録も取り組み中の依頼もない）は、依頼ボードを飛ばして依頼1をすぐに始める。
+ * 依頼1がそのまま遊び方の練習になっているので、最初の数分を説明や画面の移動に使わないようにする。
+ */
+function start(app) {
+  const firstTime = Object.keys(app.progress.records).length === 0 && !app.progress.session;
+  const first = app.data.requests[0];
+  if (!firstTime || !first) {
+    app.navigate('board');
+    return;
+  }
+  app.update((progress) => startRequest(progress, first, app.catalog));
+  app.navigate('workshop');
 }

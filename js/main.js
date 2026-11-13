@@ -8,6 +8,7 @@ import { REINFORCEMENTS } from './data/reinforcements.js';
 import { REQUESTS, RANKS } from './data/requests.js';
 import { UI } from './data/uiText.js';
 import { CHANGELOG } from './data/about.js';
+import { TITLES } from './data/rewards.js';
 import { buildCatalog } from './core/rules.js';
 import { createProgress } from './core/gameState.js';
 import { loadProgress, saveProgress, clearProgress } from './core/storage.js';
@@ -57,7 +58,7 @@ const SCREENS = {
 
 const data = { materials: MATERIALS, processes: PROCESSES, reinforcements: REINFORCEMENTS, requests: REQUESTS, ranks: RANKS };
 const catalog = buildCatalog(data);
-const dataProblems = validateData({ ...data, uiText: [UI], changelog: CHANGELOG }, catalog, { artNames: Object.keys(ART_DRAWERS) });
+const dataProblems = validateData({ ...data, uiText: [UI, TITLES], changelog: CHANGELOG }, catalog, { artNames: Object.keys(ART_DRAWERS) });
 let saveWorks = true;
 let previousScreen = 'title';
 let lastViewKey = '';

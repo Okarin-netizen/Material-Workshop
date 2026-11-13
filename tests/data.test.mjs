@@ -1,5 +1,6 @@
 // データの点検（validateData）と、ふりがな記法の読み取り（rubyParse）を確かめる。
 
+import { TITLES } from '../js/data/rewards.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateData, findMarkupProblem } from '../js/core/validateData.js';
@@ -11,7 +12,7 @@ import { DATA, CATALOG } from './helpers.mjs';
 const ART_NAMES = ['parkBench', 'handrail', 'panHandle', 'bookshelf', 'stationBench', 'drinkBottle', 'bicycleFrame', 'kitchenKnife'];
 
 test('今のデータには問題がない', () => {
-  assert.deepEqual(validateData({ ...DATA, uiText: [UI] }, CATALOG, { artNames: ART_NAMES }), []);
+  assert.deepEqual(validateData({ ...DATA, uiText: [UI, TITLES] }, CATALOG, { artNames: ART_NAMES }), []);
 });
 
 test('存在しない材料IDを書くと見つかる', () => {

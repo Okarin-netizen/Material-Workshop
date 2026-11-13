@@ -6,7 +6,7 @@
 //   3. 指標 = 依頼の計算式（特性の重みつき平均）を 0〜100 にし、加工・工夫の指標効果を足す
 //      コストだけは「費用 ÷ 予算」から計算する
 //   4. テスト（必須条件）を判定する
-//   5. 得点 = 指標の重みつき平均。星は テスト全合格 → ★1、70点以上 → ★2、85点以上 → ★3
+//   5. 得点 = 指標の重みつき平均。星は テスト全合格 → ★1、80点以上 → ★2、85点以上 → ★3
 
 import { TRAIT_MAX, METRIC_MAX, STAR_SCORE, COST_SCORE } from './constants.js';
 import { findRequestReinforcement, materialKind } from './rules.js';
@@ -274,4 +274,28 @@ export function pickWhatIf(request, design) {
       item.without ? design.reinforcements.includes(item.without) : design.materials[item.part] !== item.material,
     ) ?? null
   );
+}
+
+/**
+ * 結果画面の「次の目標」：次の星まであと何点か、いちばん伸ばしやすい指標はどれか。
+ * 伸ばしやすさ＝得点の重み ×（満点 − 今の値）。答えは言わず、考える場所だけを指す。
+ * テストに不合格のとき（まずテストを直す）と、★3のときは null。
+ * @param {import('../data/requests.js').GameRequest} request
+ * @param {Evaluation} evaluation
+ * @returns {{stars: 2|3, points: number, metricId: string}|null}
+ */
+export function nextGoal(request, evaluation) {
+  if (!evaluation.allPassed || evaluation.stars >= 3) return null;
+  const stars = evaluation.stars === 1 ? 2 : 3;
+  const target = stars === 2 ? STAR_SCORE.two : STAR_SCORE.three;
+  let metricId = null;
+  let room = -1;
+  for (const [id, weight] of Object.entries(request.scoreWeights)) {
+    const gap = weight * (METRIC_MAX - (evaluation.metrics[id] ?? 0));
+    if (gap > room) {
+      room = gap;
+      metricId = id;
+    }
+  }
+  return { stars, points: target - evaluation.score, metricId };
 }

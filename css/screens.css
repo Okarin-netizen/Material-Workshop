@@ -1123,3 +1123,163 @@
     font-size: 12px;
   }
 }
+
+/* ── 結果：短いお知らせ（予想・次の目標・称号） ── */
+
+.result-notes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.result-note--hit {
+  color: var(--green-dark);
+}
+
+.result-note--miss {
+  color: var(--text-sub);
+}
+
+.result-note--goal {
+  color: var(--blue);
+}
+
+.result-note--title {
+  color: var(--orange-dark);
+  font-weight: 900;
+}
+
+/* ── 結果の演出：テストを1つずつ判定 → 星 → 評価 ──
+   テストした直後だけ .is-revealing がつく。クリックすると .is-skipped で全部すぐに出る。
+   動きを減らす設定（prefers-reduced-motion）のときは JS 側で .is-revealing をつけない。 */
+
+.is-revealing .test-row {
+  animation: reveal-stamp 0.3s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  animation-delay: calc(var(--i) * var(--reveal-step));
+}
+
+.is-revealing .verdict .star--on {
+  animation: reveal-star 0.35s cubic-bezier(0.2, 1.8, 0.4, 1) both;
+  animation-delay: calc((var(--reveal-count) + 1) * var(--reveal-step));
+}
+
+.is-revealing .verdict .star--on:nth-child(2) {
+  animation-delay: calc((var(--reveal-count) + 1) * var(--reveal-step) + 0.15s);
+}
+
+.is-revealing .verdict .star--on:nth-child(3) {
+  animation-delay: calc((var(--reveal-count) + 1) * var(--reveal-step) + 0.3s);
+}
+
+.is-revealing .verdict__text,
+.is-revealing .result-notes,
+.is-revealing .comment {
+  animation: reveal-fade 0.3s ease-out both;
+  animation-delay: calc((var(--reveal-count) + 1) * var(--reveal-step) + 0.45s);
+}
+
+.is-revealing.is-skipped *,
+.is-revealing.is-skipped {
+  animation: none !important;
+}
+
+@keyframes reveal-stamp {
+  from {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes reveal-star {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-40deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes reveal-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── ステップ4：テスト前の予想 ── */
+
+.step-footer--predict {
+  gap: 6px;
+}
+
+.predict__question {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.predict__buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.predict__buttons .btn {
+  min-width: 0;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* ── 依頼ボード：称号 ── */
+
+.board-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+}
+
+.board-title {
+  font-weight: 900;
+  color: var(--brown);
+}
+
+.board-title__name {
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--yellow);
+}
+
+.board-sub {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+
+.board-master {
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-small);
+  background: var(--yellow);
+  font-weight: 900;
+  text-align: center;
+}

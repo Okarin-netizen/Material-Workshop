@@ -62,6 +62,9 @@ export function normalizeProgress(raw, catalog) {
 
   progress.furigana = raw.furigana !== false;
   progress.unlockAll = raw.unlockAll === true;
+  progress.sound = raw.sound === true;
+  const total = toInteger(raw.predictions?.total, 0, 100000);
+  progress.predictions = { hits: Math.min(total, toInteger(raw.predictions?.hits, 0, 100000)), total };
   progress = setReflection(progress, typeof raw.reflection === 'string' ? raw.reflection : '');
   progress.zukan = normalizeZukan(raw.zukan, catalog);
   progress = normalizeRecords(progress, raw.records, catalog);
@@ -117,6 +120,10 @@ function normalizeSession(session, catalog) {
     design: sanitizeDesign(request, session.design, catalog),
     tested,
     newEntries: [],
+    prediction: null,
+    predictionHit: null,
+    reveal: false,
+    newTitle: null,
   };
 }
 

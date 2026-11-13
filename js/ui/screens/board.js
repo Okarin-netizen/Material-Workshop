@@ -3,7 +3,8 @@
 import { h, fill } from '../dom.js';
 import { UI } from '../../data/uiText.js';
 import { CLEARS_TO_UNLOCK_NEXT_RANK } from '../../core/constants.js';
-import { isRankUnlocked, recordOf, setUnlockAll, startRequest, totalStars } from '../../core/gameState.js';
+import { isRankUnlocked, recordOf, setUnlockAll, startRequest, totalStars, titleIndex, nextTitle } from '../../core/gameState.js';
+import { TITLES } from '../../data/rewards.js';
 import { renderStars } from '../components/stars.js';
 import { renderClientArt } from '../components/clientArt.js';
 
@@ -23,12 +24,29 @@ export function renderBoard(app) {
         'div',
         { class: 'board-head' },
         h('h1', { class: 'page-title', tabindex: '-1', dataset: { autofocus: 'true' } }, UI.board.heading),
-        h('p', { class: 'board-total' }, fill(UI.board.starsTotal, { count: totalStars(app.progress) })),
+        renderStatus(app),
       ),
+      totalStars(app.progress) >= TITLES.at(-1).stars ? h('p', { class: 'board-master' }, UI.board.allMaster) : null,
       h('p', { class: 'page-lead' }, fill(UI.board.lead, { need: CLEARS_TO_UNLOCK_NEXT_RANK })),
       ranks.map((rank) => renderRank(app, rank, requests.filter((request) => request.rank === rank.id))),
       renderTeacherSettings(app),
     ),
+  );
+}
+
+/** 星の合計・工房の称号・次の称号まで・予想の的中 */
+function renderStatus(app) {
+  const stars = totalStars(app.progress);
+  const title = TITLES[titleIndex(stars)];
+  const next = nextTitle(stars);
+  const { hits, total } = app.progress.predictions;
+  return h(
+    'div',
+    { class: 'board-status' },
+    h('p', { class: 'board-title' }, UI.board.titleLabel, ' ', h('span', { class: 'board-title__name' }, title.name)),
+    h('p', { class: 'board-total' }, fill(UI.board.starsTotal, { count: stars })),
+    next ? h('p', { class: 'board-sub' }, fill(UI.board.nextTitle, { need: next.need, title: TITLES[next.index].name })) : null,
+    total > 0 ? h('p', { class: 'board-sub' }, fill(UI.board.predictions, { hits, total })) : null,
   );
 }
 

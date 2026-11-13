@@ -110,7 +110,7 @@ async function checkLayout(page, label, { fitHeight = false } = {}) {
 const click = (page, key) => page.locator(`[data-focus-key="${key}"]`).click();
 
 /** 答えのとおりにクリックして、テストまで進める */
-async function playDesign(page, request, answer, { screenshots = false, viewportLabel = '', fitHeight = true } = {}) {
+async function playDesign(page, request, answer, { screenshots = false, viewportLabel = '', fitHeight = true, predict = 'pass', skipReveal = true } = {}) {
   await click(page, `request-${request.id}`);
   await page.locator('#choices-heading').waitFor();
   if (screenshots) {
@@ -145,8 +145,10 @@ async function playDesign(page, request, answer, { screenshots = false, viewport
     await shot(page, `${request.id}-step4${viewportLabel}`);
     await checkLayout(page, `依頼${request.number} ステップ4${viewportLabel}`, { fitHeight });
   }
-  await click(page, 'run-test');
+  await click(page, predict === 'pass' ? 'run-test' : 'run-test-fail');
   await page.locator('#tests-heading').waitFor();
+  // 結果の演出は、クリックすると飛ばせる（スクリーンショットとはみ出しの点検のため、すぐに全部出す）
+  if (skipReveal) await page.locator('#tests-heading').click();
 }
 
 async function starsOnResult(page) {
@@ -167,7 +169,13 @@ async function playAllRequests(browser, ANSWERS, REQUESTS) {
 
   await shot(page, 'title');
   await checkLayout(page, 'タイトル', { fitHeight: true });
+  // はじめての「はじめる」は、依頼ボードを飛ばして依頼1が始まる
   await click(page, 'title-start');
+  await page.locator('#choices-heading').waitFor();
+  if (!(await page.locator('.stage-pill').textContent()).includes('1')) problem('はじめての「はじめる」で依頼1が始まらない');
+  else ok('はじめての「はじめる」で依頼1がすぐ始まる');
+  await shot(page, 'first-start');
+  await click(page, 'header-board');
   await shot(page, 'board-start');
   await checkLayout(page, '依頼ボード（最初）');
 
@@ -183,7 +191,14 @@ async function playAllRequests(browser, ANSWERS, REQUESTS) {
     const detailed = request.id === 'parkBench' || request.id === 'stationBench' || request.id === 'drinkBottle';
     if (request.id === 'panHandle') {
       const wrong = answers.wrong[0];
-      await playDesign(page, request, wrong);
+      // 効果音をオンにして、「不合格だと思う」と予想し、演出を最後まで見る
+      await click(page, 'header-sound');
+      await playDesign(page, request, wrong, { predict: 'fail', skipReveal: false });
+      await shot(page, `${request.id}-result-revealing`);
+      await page.waitForTimeout(2200);
+      if (!(await page.locator('.result-note--hit').count())) problem('「不合格だと思う」の予想が当たったと出ない');
+      else ok('効果音オン・「不合格だと思う」の予想・演出を最後まで表示');
+      await click(page, 'header-sound');
       const stars = await starsOnResult(page);
       const failedText = await page.locator('.test-row--fail').first().textContent();
       if (stars !== 0 || !failedText.includes('軟化')) problem(`依頼3の誤答が不合格にならない（★${stars}）`);
@@ -201,6 +216,17 @@ async function playAllRequests(browser, ANSWERS, REQUESTS) {
     if (stars !== 3) problem(`依頼${request.number}「${answer.label}」が★${stars}`);
     else ok(`依頼${request.number} 模範解「${answer.label}」→ ★3`);
 
+    if (request.id === 'parkBench') {
+      const hit = await page.locator('.result-note--hit').count();
+      if (!hit) problem('予想（合格）が当たったと結果に出ない');
+      else ok('テスト前の予想が当たったと結果に出る');
+      // 演出が終わったあと、描き直しても演出をくり返さない
+      await page.locator('#reason-input').focus();
+      await click(page, 'header-furigana');
+      await click(page, 'header-furigana');
+      if (await page.locator('.is-revealing').count()) problem('描き直すと結果の演出がくり返される');
+      else ok('結果の演出はテスト直後の1回だけ');
+    }
     await page.locator('#reason-input').fill(`依頼${request.number}の理由：教科書の特性をもとに選んだ`);
     await shot(page, `${request.id}-result`);
     await checkLayout(page, `依頼${request.number} 結果`, { fitHeight: true });
@@ -216,6 +242,9 @@ async function playAllRequests(browser, ANSWERS, REQUESTS) {
   const nearStars = await starsOnResult(page);
   if (nearStars < 1 || nearStars > 2) problem(`惜しい答え「${near.label}」が★${nearStars}`);
   else ok(`惜しい答え「${near.label}」→ ★${nearStars}`);
+  const goal = (await page.locator('.result-note--goal').textContent()) ?? '';
+  if (!goal.includes('あと')) problem(`★${nearStars}なのに「★3まであと○点」が出ない：${goal}`);
+  else ok(`次の目標が出る（${goal.replace(/\s+/g, '')}）`);
   await click(page, 'to-board');
 
   await checkFurigana(page);
@@ -344,6 +373,7 @@ async function checkOtherSizes(browser, ANSWERS, REQUESTS, { width, height, touc
   await shot(page, `title-${label}`);
   await checkLayout(page, `${label} タイトル`, { fitHeight: fit });
   await click(page, 'title-start');
+  await click(page, 'header-board');
   await click(page, 'unlock-all');
   await shot(page, `board-${label}`);
   await checkLayout(page, `${label} 依頼ボード`);

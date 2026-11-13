@@ -15,7 +15,7 @@
  * @property {number[]} [stars]      near のときだけ：ありうる星の数
  */
 
-/** @type {Record<string, {model: Answer, wrong: Answer[], near: Answer[]}>} */
+/** @type {Record<string, {model: Answer, wrong: Answer[], near: Answer[], alt?: Answer[]}>} */
 export const ANSWERS = {
   parkBench: {
     model: { label: 'スギ＋切って削る＋塗装', materials: { seat: 'sugi' }, processes: { seat: 'sawPlane' }, reinforcements: ['paint'] },
@@ -33,9 +33,14 @@ export const ANSWERS = {
     wrong: [
       { label: '鋼で塗装なし（さびる）', materials: { rail: 'steel' }, processes: { rail: 'bend' }, reinforcements: [], failTests: ['rust'] },
       { label: 'アルミニウム（弱い）', materials: { rail: 'aluminum' }, processes: { rail: 'bend' }, reinforcements: ['paint'], failTests: ['strong'] },
-      { label: 'スギ', materials: { rail: 'sugi' }, processes: { rail: 'sawPlane' }, reinforcements: [], failTests: ['strong', 'rust'] },
+      { label: 'アルミニウムを型で作る（もろい）', materials: { rail: 'aluminum' }, processes: { rail: 'cast' }, reinforcements: ['paint'], failTests: ['strong'] },
     ],
-    near: [{ label: '鋼＋塗装', materials: { rail: 'steel' }, processes: { rail: 'bend' }, reinforcements: ['paint'], stars: [1, 2] }],
+    near: [
+      { label: '鋼＋塗装', materials: { rail: 'steel' }, processes: { rail: 'bend' }, reinforcements: ['paint'], stars: [1, 2] },
+      { label: 'ステンレスを切って削ってつなぐ', materials: { rail: 'stainless' }, processes: { rail: 'sawPlane' }, reinforcements: [], stars: [1, 2] },
+    ],
+    // ★3への別の道（ステンレスでなくても、アルミニウム合金＋表面処理で★3になる）
+    alt: [{ label: 'アルミニウム合金＋曲げ加工＋塗装＋金具', materials: { rail: 'aluminumAlloy' }, processes: { rail: 'bend' }, reinforcements: ['paint', 'bracket'] }],
   },
   panHandle: {
     model: { label: 'フェノール樹脂＋型', materials: { handle: 'phenol' }, processes: { handle: 'cast' }, reinforcements: [] },
@@ -72,10 +77,10 @@ export const ANSWERS = {
     ],
     near: [
       {
-        label: '鋼の脚＋塗装',
+        label: '鋼の脚を曲げ加工＋金具＋塗装',
         materials: { seat: 'sugi', frame: 'steel' },
-        processes: { seat: 'sawPlane', frame: 'weld' },
-        reinforcements: ['triangle', 'paint'],
+        processes: { seat: 'sawPlane', frame: 'bend' },
+        reinforcements: ['bracket', 'paint'],
         stars: [1, 2],
       },
     ],

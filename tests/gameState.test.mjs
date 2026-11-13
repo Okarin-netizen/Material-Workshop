@@ -15,7 +15,12 @@ import {
   setReason,
   setUnlockAll,
   recordOf,
+  finishReveal,
+  titleIndex,
+  nextTitle,
+  totalStars,
 } from '../js/core/gameState.js';
+import { TITLES } from '../js/data/rewards.js';
 import { normalizeProgress } from '../js/core/storage.js';
 import { STEP, TEXT_LIMIT } from '../js/core/constants.js';
 import { ANSWERS } from './fixtures/answers.mjs';
@@ -113,4 +118,48 @@ test('知らない依頼・材料や、こわれた保存データは捨てて�
   assert.equal(progress.session.step, STEP.reinforce, 'テスト済みでないので結果画面には戻らない');
   assert.equal(normalizeProgress({ version: 999 }, CATALOG).records.parkBench, undefined);
   assert.equal(normalizeProgress(null, CATALOG).furigana, true);
+});
+
+test('テスト前の予想：当たり・外れを数え、予想しなければ数えない', () => {
+  const request = requestById('parkBench');
+  let progress = playAnswer(createProgress(), request, ANSWERS.parkBench.model);
+  assert.equal(progress.session.predictionHit, null);
+  assert.deepEqual(progress.predictions, { hits: 0, total: 0 });
+
+  const play = (start, answer, prediction) => {
+    let next = startRequest(start, request, CATALOG);
+    next = chooseMaterial(next, request, CATALOG, 'seat', answer.materials.seat);
+    next = chooseProcess(next, request, CATALOG, 'seat', answer.processes.seat);
+    return runTest(next, request, CATALOG, prediction);
+  };
+  progress = play(progress, ANSWERS.parkBench.model, 'pass');
+  assert.equal(progress.session.predictionHit, true);
+  progress = play(progress, ANSWERS.parkBench.wrong[0], 'pass');
+  assert.equal(progress.session.predictionHit, false);
+  progress = play(progress, ANSWERS.parkBench.wrong[0], 'fail');
+  assert.deepEqual(progress.predictions, { hits: 2, total: 3 });
+  // 保存して読み直しても残る
+  assert.deepEqual(normalizeProgress(JSON.parse(JSON.stringify(progress)), CATALOG).predictions, { hits: 2, total: 3 });
+});
+
+test('称号：星の合計で上がり、上がったテストでだけ newTitle が入る', () => {
+  assert.equal(titleIndex(0), 0);
+  assert.equal(titleIndex(TITLES[1].stars), 1);
+  assert.equal(titleIndex(TITLES.at(-1).stars), TITLES.length - 1);
+  assert.deepEqual(nextTitle(TITLES[1].stars - 2), { index: 1, need: 2 });
+  assert.equal(nextTitle(TITLES.at(-1).stars), null);
+  // 全依頼を模範解で★3にすると最後の称号になる
+  let progress = createProgress();
+  for (const request of DATA.requests) progress = playAnswer(progress, request, ANSWERS[request.id].model);
+  assert.equal(titleIndex(totalStars(progress)), TITLES.length - 1);
+  assert.equal(TITLES.at(-1).stars, DATA.requests.length * 3, 'いちばん上の称号は全依頼★3');
+});
+
+test('結果の演出はテスト直後だけ（finishReveal で終わる）', () => {
+  const request = requestById('parkBench');
+  let progress = playAnswer(createProgress(), request, ANSWERS.parkBench.model);
+  assert.equal(progress.session.reveal, true);
+  progress = finishReveal(progress);
+  assert.equal(progress.session.reveal, false);
+  assert.equal(normalizeProgress(JSON.parse(JSON.stringify(playAnswer(createProgress(), request, ANSWERS.parkBench.model))), CATALOG).session.reveal, false);
 });

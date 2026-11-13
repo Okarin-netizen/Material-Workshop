@@ -6,7 +6,6 @@ import { reinforcementAvailability } from '../../../core/rules.js';
 import { reinforcementCost } from '../../../core/scoring.js';
 import { toggleReinforcement, runTest } from '../../../core/gameState.js';
 import { renderChoiceCard } from '../../components/choiceCard.js';
-import { renderStepFooter } from '../../components/stepFooter.js';
 
 /**
  * @param {import('../../../main.js').App} app
@@ -24,12 +23,26 @@ export function renderStepReinforce(app, request) {
       { class: 'panel__scroll' },
       h('div', { class: 'card-grid card-grid--one' }, request.reinforcements.map((entry) => renderReinforcementCard(app, request, entry))),
     ),
-    renderStepFooter({
-      label: UI.stepReinforce.test,
-      enabled: true,
-      key: 'run-test',
-      onClick: () => app.update((progress) => runTest(progress, request, app.catalog)),
-    }),
+    renderPredictFooter(app, request),
+  );
+}
+
+/**
+ * テストの前に「全部合格すると思うか」を予想してからテストする。
+ * 予想を1クリックに組みこんで、手間を増やさずに「自分の設計を説明できるか」を試す。
+ */
+function renderPredictFooter(app, request) {
+  const run = (prediction) => app.update((progress) => runTest(progress, request, app.catalog, prediction));
+  return h(
+    'div',
+    { class: 'step-footer step-footer--predict' },
+    h('p', { class: 'predict__question', id: 'predict-question' }, UI.stepReinforce.predictQuestion),
+    h(
+      'div',
+      { class: 'predict__buttons', role: 'group', 'aria-labelledby': 'predict-question' },
+      h('button', { type: 'button', class: 'btn btn--primary', dataset: { focusKey: 'run-test' }, onClick: () => run('pass') }, UI.stepReinforce.predictPass),
+      h('button', { type: 'button', class: 'btn btn--sub', dataset: { focusKey: 'run-test-fail' }, onClick: () => run('fail') }, UI.stepReinforce.predictFail),
+    ),
   );
 }
 

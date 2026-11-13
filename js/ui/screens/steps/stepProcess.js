@@ -54,9 +54,20 @@ function renderProcessCard(app, request, part, material, processId) {
         h('span', { class: 'choice-card__price' }, fill(UI.stepProcess.costPlus, { cost: formatNumber(process.costPerUnit * part.size) })),
       ),
       availability.ok
-        ? h('span', { class: 'choice-card__text' }, process.summary)
+        ? [h('span', { class: 'choice-card__text' }, process.summary), renderProcessNote(part.processNotes?.[processId])]
         : h('span', { class: 'choice-card__reason' }, h('strong', {}, UI.stepProcess.unsuitable), availability.reason),
     ],
+  );
+}
+
+/** この依頼での、その加工方法のよい点（◯）と注意点（△） */
+function renderProcessNote(note) {
+  if (!note) return null;
+  return h(
+    'span',
+    { class: 'pros-cons' },
+    note.good ? h('span', { class: 'pros-cons__good' }, `${UI.stepReinforce.good} `, note.good) : null,
+    note.bad ? h('span', { class: 'pros-cons__bad' }, `${UI.stepReinforce.bad} `, note.bad) : null,
   );
 }
 
