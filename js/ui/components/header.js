@@ -2,7 +2,7 @@
 
 import { h, fill } from '../dom.js';
 import { UI } from '../../data/uiText.js';
-import { setFurigana } from '../../core/gameState.js';
+import { setFurigana, setSound } from '../../core/gameState.js';
 import { plain } from './ruby.js';
 
 /**
@@ -25,6 +25,7 @@ export function renderHeader(app) {
       'nav',
       { class: 'header-nav', 'aria-label': plain(UI.header.menu) },
       furiganaButton(app),
+      soundButton(app),
       navButton(app, 'board', UI.header.board),
       navButton(app, 'zukan', fill(UI.header.zukanCount, { count: zukanCount, total: zukanTotal })),
       navButton(app, 'summary', UI.header.summary),
@@ -45,6 +46,22 @@ function furiganaButton(app) {
     },
     h('span', { class: 'visually-hidden' }, UI.header.furiganaLabel),
     on ? UI.header.furiganaOn : UI.header.furiganaOff,
+  );
+}
+
+function soundButton(app) {
+  const on = app.progress.sound;
+  return h(
+    'button',
+    {
+      class: `header-btn header-btn--furigana${on ? ' is-on' : ''}`,
+      type: 'button',
+      'aria-pressed': String(on),
+      dataset: { focusKey: 'header-sound' },
+      onClick: () => app.update((progress) => setSound(progress, !progress.sound)),
+    },
+    h('span', { class: 'visually-hidden' }, UI.header.soundLabel),
+    on ? UI.header.soundOn : UI.header.soundOff,
   );
 }
 

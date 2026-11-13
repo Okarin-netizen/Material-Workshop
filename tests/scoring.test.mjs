@@ -2,7 +2,7 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateDesign, costMetric, starsFor, totalScore, pickWhatIf } from '../js/core/scoring.js';
+import { evaluateDesign, costMetric, starsFor, totalScore, pickWhatIf, nextGoal } from '../js/core/scoring.js';
 import { processAvailability, pruneDesign, reinforcementAvailability } from '../js/core/rules.js';
 import { ANSWERS } from './fixtures/answers.mjs';
 import { CATALOG, DATA, requestById, designOf } from './helpers.mjs';
@@ -157,4 +157,23 @@ describe('加工方法の選び方で得点が変わる', () => {
       });
     }
   }
+});
+
+describe('結果画面の「次の目標」', () => {
+  test('★1・★2なら次の星までの点と、伸ばしやすい指標を返す', () => {
+    const request = requestById('parkBench');
+    const near = ANSWERS.parkBench.near[0];
+    const result = evaluateDesign(request, designOf(near), CATALOG);
+    const goal = nextGoal(request, result);
+    assert.ok(goal, `★${result.stars}（${result.score}点）`);
+    assert.equal(goal.stars, result.stars + 1);
+    assert.ok(goal.points > 0);
+    assert.ok(Object.keys(request.scoreWeights).includes(goal.metricId));
+  });
+
+  test('★3と、テスト不合格のときは出さない', () => {
+    const request = requestById('parkBench');
+    assert.equal(nextGoal(request, evaluateDesign(request, designOf(ANSWERS.parkBench.model), CATALOG)), null);
+    assert.equal(nextGoal(request, evaluateDesign(request, designOf(ANSWERS.parkBench.wrong[0]), CATALOG)), null);
+  });
 });

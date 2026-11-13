@@ -275,3 +275,27 @@ export function pickWhatIf(request, design) {
     ) ?? null
   );
 }
+
+/**
+ * 結果画面の「次の目標」：次の星まであと何点か、いちばん伸ばしやすい指標はどれか。
+ * 伸ばしやすさ＝得点の重み ×（満点 − 今の値）。答えは言わず、考える場所だけを指す。
+ * テストに不合格のとき（まずテストを直す）と、★3のときは null。
+ * @param {import('../data/requests.js').GameRequest} request
+ * @param {Evaluation} evaluation
+ * @returns {{stars: 2|3, points: number, metricId: string}|null}
+ */
+export function nextGoal(request, evaluation) {
+  if (!evaluation.allPassed || evaluation.stars >= 3) return null;
+  const stars = evaluation.stars === 1 ? 2 : 3;
+  const target = stars === 2 ? STAR_SCORE.two : STAR_SCORE.three;
+  let metricId = null;
+  let room = -1;
+  for (const [id, weight] of Object.entries(request.scoreWeights)) {
+    const gap = weight * (METRIC_MAX - (evaluation.metrics[id] ?? 0));
+    if (gap > room) {
+      room = gap;
+      metricId = id;
+    }
+  }
+  return { stars, points: target - evaluation.score, metricId };
+}

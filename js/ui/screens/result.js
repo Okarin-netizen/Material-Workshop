@@ -3,8 +3,11 @@
 import { h, fill, formatNumber } from '../dom.js';
 import { UI } from '../../data/uiText.js';
 import { STEP, TEXT_LIMIT } from '../../core/constants.js';
-import { pickWhatIf } from '../../core/scoring.js';
-import { goToStep, recordOf, setReason } from '../../core/gameState.js';
+import { pickWhatIf, nextGoal } from '../../core/scoring.js';
+import { goToStep, recordOf, setReason, finishReveal, isZukanComplete } from '../../core/gameState.js';
+import { METRICS } from '../../data/traits.js';
+import { TITLES } from '../../data/rewards.js';
+import { playResultSound } from '../sound.js';
 import { renderProductArt } from '../art/index.js';
 import { renderRadarChart } from '../components/radarChart.js';
 import { renderStars } from '../components/stars.js';
@@ -18,13 +21,36 @@ import { plain } from '../components/ruby.js';
  * @returns {HTMLElement}
  */
 export function renderResult(app, request, evaluation) {
+  const { session } = app.progress;
+  const revealing = session.reveal && !prefersReducedMotion();
+  if (session.reveal) {
+    if (app.progress.sound) {
+      const step = revealing ? REVEAL_STEP : 0.05;
+      playResultSound({ tests: evaluation.tests, stars: evaluation.stars, newTitle: session.newTitle !== null }, step);
+    }
+    // 演出は1回だけ。描き直したときにくり返さないよう、すぐに「見せた」にしておく
+    queueMicrotask(() => app.updateQuietly(finishReveal));
+  }
   return h(
     'div',
-    { class: 'three-columns three-columns--result' },
+    {
+      class: `three-columns three-columns--result${revealing ? ' is-revealing' : ''}`,
+      style: { '--reveal-step': `${REVEAL_STEP}s`, '--reveal-count': String(request.tests.length) },
+      title: revealing ? plain(UI.result.skip) : null,
+      // 演出の途中でクリックしたら、すぐに全部を出す
+      onClick: revealing ? (event) => event.currentTarget.classList.add('is-skipped') : null,
+    },
     renderTestsPanel(app, request, evaluation),
     renderEvaluationPanel(app, request, evaluation),
     renderLearningPanel(app, request),
   );
+}
+
+/** テスト1つを見せる間隔（秒）。合格・不合格を1つずつ出し、そのあと星を出す。全部で2秒くらいに収める */
+const REVEAL_STEP = 0.35;
+
+function prefersReducedMotion() {
+  return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
 // ── 左：テスト ───────────────────────────────
@@ -35,16 +61,16 @@ function renderTestsPanel(app, request, evaluation) {
     { class: 'panel panel--tests', 'aria-labelledby': 'tests-heading' },
     h('h2', { class: 'panel__heading', id: 'tests-heading', tabindex: '-1', dataset: { autofocus: 'true' } }, UI.result.testsHeading),
     h('div', { class: 'art-frame art-frame--result' }, renderProductArt(request, app.progress.session.design, app.catalog)),
-    h('div', { class: 'panel__scroll panel__scroll--tests' }, h('ul', { class: 'test-list' }, request.tests.map((test) => renderTestRow(test, evaluation)))),
+    h('div', { class: 'panel__scroll panel__scroll--tests' }, h('ul', { class: 'test-list' }, request.tests.map((test, index) => renderTestRow(test, evaluation, index)))),
   );
 }
 
-function renderTestRow(test, evaluation) {
+function renderTestRow(test, evaluation, index) {
   const result = evaluation.tests.find((item) => item.id === test.id);
   const passed = result.passed === true;
   return h(
     'li',
-    { class: `test-row ${passed ? 'test-row--pass' : 'test-row--fail'}` },
+    { class: `test-row ${passed ? 'test-row--pass' : 'test-row--fail'}`, style: { '--i': String(index + 1) } },
     h('span', { class: 'test-row__badge' }, passed ? UI.result.pass : UI.result.fail),
     h(
       'span',
@@ -76,6 +102,7 @@ function renderEvaluationPanel(app, request, evaluation) {
       ),
       h('p', { class: 'verdict__cost' }, fill(UI.result.cost, { cost: formatNumber(evaluation.cost), budget: formatNumber(request.budget) })),
     ),
+    renderResultNotes(app, request, evaluation),
     renderNewEntries(app),
     h('div', { class: 'radar-frame' }, renderRadarChart(evaluation.metrics)),
     h('div', { class: 'comment' }, renderClientArt(request.client.look, 48), h('p', { class: 'comment__text' }, comment)),
@@ -119,6 +146,32 @@ function renderWhatIf(app, request) {
         material: app.catalog.materials.get(item.material).name,
       });
   return h('div', { class: 'what-if' }, h('strong', {}, title), h('span', {}, item.text));
+}
+
+/**
+ * 評価の下の短いお知らせ：予想の当たり外れ、次の星までの目標、称号が上がった、図鑑がそろった。
+ * 結果画面は1画面に収めたいので、1行ずつの短い文にする。
+ */
+function renderResultNotes(app, request, evaluation) {
+  const { session } = app.progress;
+  const notes = [];
+  if (session.newTitle !== null && session.newTitle !== undefined) {
+    notes.push(h('li', { class: 'result-note result-note--title' }, fill(UI.result.newTitle, { title: TITLES[session.newTitle].name })));
+  }
+  if (session.newEntries.length && isZukanComplete(app.progress, app.catalog)) {
+    notes.push(h('li', { class: 'result-note result-note--title' }, UI.result.zukanComplete));
+  }
+  if (session.predictionHit !== null && session.predictionHit !== undefined) {
+    notes.push(
+      h('li', { class: `result-note ${session.predictionHit ? 'result-note--hit' : 'result-note--miss'}` }, session.predictionHit ? UI.result.predictHit : UI.result.predictMiss),
+    );
+  }
+  const goal = nextGoal(request, evaluation);
+  if (goal) {
+    const metric = METRICS.find((item) => item.id === goal.metricId)?.label ?? '';
+    notes.push(h('li', { class: 'result-note result-note--goal' }, fill(UI.result.nextGoal, { stars: goal.stars, points: goal.points, metric })));
+  }
+  return notes.length ? h('ul', { class: 'result-notes' }, notes) : null;
 }
 
 /** 直前のテストで図鑑に加わったもの（場所をとらないよう、名前を「・」でつないだ1〜2行にする） */

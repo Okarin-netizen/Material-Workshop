@@ -4,6 +4,7 @@
 import { STEP, CLEARS_TO_UNLOCK_NEXT_RANK, SAVE_VERSION, TEXT_LIMIT } from './constants.js';
 import { createEmptyDesign, pruneDesign, allMaterialsChosen, allProcessesChosen } from './rules.js';
 import { evaluateDesign } from './scoring.js';
+import { TITLES } from '../data/rewards.js';
 
 /**
  * @typedef {Object} DesignRecord テストした設計の記録
@@ -28,6 +29,10 @@ import { evaluateDesign } from './scoring.js';
  * @property {import('./rules.js').Design} design
  * @property {boolean} tested     今の設計でテスト済みか（設計を変えると false）
  * @property {{type: string, id: string}[]} newEntries 直前のテストで図鑑に増えたもの
+ * @property {'pass'|'fail'|null} [prediction] テストの前にした予想（全部合格すると思うか）
+ * @property {boolean|null} [predictionHit]   予想が当たったか（予想していなければ null）
+ * @property {boolean} [reveal]   テストした直後か（結果の演出を1回だけ見せるため。保存はしない）
+ * @property {number|null} [newTitle] このテストで上がった称号の番号（上がっていなければ null）
  */
 
 /**
@@ -35,6 +40,8 @@ import { evaluateDesign } from './scoring.js';
  * @property {number} version
  * @property {boolean} furigana
  * @property {boolean} unlockAll   先生用：すべての依頼を開く
+ * @property {boolean} sound       効果音を鳴らすか（はじめは鳴らさない）
+ * @property {{hits: number, total: number}} predictions テスト前の予想の当たった数と、予想した数
  * @property {Record<string, RequestRecord>} records
  * @property {{materials: string[], processes: string[], reinforcements: string[]}} zukan
  * @property {string} reflection   まとめ画面のふり返り
@@ -47,6 +54,8 @@ export function createProgress() {
     version: SAVE_VERSION,
     furigana: true,
     unlockAll: false,
+    sound: false,
+    predictions: { hits: 0, total: 0 },
     records: {},
     zukan: { materials: [], processes: [], reinforcements: [] },
     reflection: '',
@@ -85,6 +94,10 @@ export function startRequest(progress, request, catalog) {
     design: previous ? sanitizeDesign(request, previous, catalog) : createEmptyDesign(request),
     tested: false,
     newEntries: [],
+    prediction: null,
+    predictionHit: null,
+    reveal: false,
+    newTitle: null,
   };
   return { ...progress, session };
 }
@@ -164,24 +177,48 @@ export function toggleReinforcement(progress, request, catalog, reinforcementId)
 }
 
 function updateDesign(progress, request, catalog, design) {
-  return withSession(progress, { design: pruneDesign(request, design, catalog), tested: false, newEntries: [] });
+  return withSession(progress, { design: pruneDesign(request, design, catalog), tested: false, newEntries: [], predictionHit: null, newTitle: null });
 }
 
 // ── テスト ──────────────────────────────────
 
 /**
  * テストをして結果を記録し、ステップ5へ進む。
+ * @param {Progress} progress
+ * @param {import('../data/requests.js').GameRequest} request
+ * @param {import('./rules.js').Catalog} catalog
+ * @param {'pass'|'fail'|null} [prediction] テストの前の予想（全部合格すると思う＝'pass'）
  * @returns {Progress}
  */
-export function runTest(progress, request, catalog) {
+export function runTest(progress, request, catalog, prediction = null) {
   const { design } = progress.session;
   const evaluation = evaluateDesign(request, design, catalog);
   if (!evaluation.complete) return progress;
 
   const { zukan, newEntries } = unlockZukan(progress.zukan, request, design);
   const records = { ...progress.records, [request.id]: updatedRecord(recordOf(progress, request.id), design, evaluation) };
-  const next = { ...progress, zukan, records };
-  return withSession(next, { tested: true, step: STEP.result, newEntries });
+  const predictionHit = prediction ? (prediction === 'pass') === evaluation.allPassed : null;
+  const predictions = prediction
+    ? { hits: progress.predictions.hits + (predictionHit ? 1 : 0), total: progress.predictions.total + 1 }
+    : progress.predictions;
+  const next = { ...progress, zukan, records, predictions };
+  const titleBefore = titleIndex(totalStars(progress));
+  const titleAfter = titleIndex(totalStars(next));
+  return withSession(next, {
+    tested: true,
+    step: STEP.result,
+    newEntries,
+    prediction,
+    predictionHit,
+    reveal: true,
+    newTitle: titleAfter > titleBefore ? titleAfter : null,
+  });
+}
+
+/** 結果の演出を見せ終わった（もう一度描き直しても演出しない） */
+export function finishReveal(progress) {
+  if (!progress.session?.reveal) return progress;
+  return withSession(progress, { reveal: false });
 }
 
 function updatedRecord(record, design, evaluation) {
@@ -235,6 +272,10 @@ export function setFurigana(progress, enabled) {
   return { ...progress, furigana: Boolean(enabled) };
 }
 
+export function setSound(progress, enabled) {
+  return { ...progress, sound: Boolean(enabled) };
+}
+
 export function setUnlockAll(progress, enabled) {
   return { ...progress, unlockAll: Boolean(enabled) };
 }
@@ -265,6 +306,40 @@ export function isRankUnlocked(progress, ranks, rankId, requests) {
 /** 星の合計 */
 export function totalStars(progress) {
   return Object.values(progress.records).reduce((sum, record) => sum + record.bestStars, 0);
+}
+
+// ── 称号と図鑑 ───────────────────────────────
+
+/**
+ * 星の合計から、工房の称号の番号（TITLES の何番目か）を返す。
+ * @param {number} stars
+ * @returns {number}
+ */
+export function titleIndex(stars) {
+  let index = 0;
+  TITLES.forEach((title, i) => {
+    if (stars >= title.stars) index = i;
+  });
+  return index;
+}
+
+/**
+ * 次の称号と、そこまでに必要な星の数。いちばん上の称号ならnull。
+ * @param {number} stars
+ * @returns {{index: number, need: number}|null}
+ */
+export function nextTitle(stars) {
+  const index = titleIndex(stars) + 1;
+  return index < TITLES.length ? { index, need: TITLES[index].stars - stars } : null;
+}
+
+/** 図鑑がすべてそろったか */
+export function isZukanComplete(progress, catalog) {
+  return (
+    progress.zukan.materials.length >= catalog.materials.size &&
+    progress.zukan.processes.length >= catalog.processes.size &&
+    progress.zukan.reinforcements.length >= catalog.reinforcements.size
+  );
 }
 
 /** session の一部を変えた progress を返す */
