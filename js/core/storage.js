@@ -3,7 +3,8 @@
 // localStorage が使えない環境（プライベートウィンドウなど）でも、ゲームは止まらずに遊べるようにする。
 
 import { STORAGE_KEY, SAVE_VERSION, STEP } from './constants.js';
-import { createProgress, sanitizeDesign, setReason, setReflection } from './gameState.js';
+import { createProgress, sanitizeDesign, setReason, setReflection, canEnterStep } from './gameState.js';
+import { allMaterialsChosen, allProcessesChosen } from './rules.js';
 
 /**
  * 保存されている進行状況を読む。なければ（または読めなければ）新しい進行状況を返す。
@@ -42,11 +43,6 @@ export function clearProgress() {
   } catch (error) {
     console.warn('保存データを消せませんでした。', error);
   }
-}
-
-/** 保存データがあるか（タイトル画面の「つづきから」に使う） */
-export function hasSavedSession(progress) {
-  return Boolean(progress.session);
 }
 
 /**
@@ -110,14 +106,18 @@ function normalizeSession(session, catalog) {
   const request = session && catalog.requests.get(session.requestId);
   if (!request) return null;
   const partId = request.parts.some((part) => part.id === session.partId) ? session.partId : request.parts[0].id;
-  // 結果画面は「今の設計でテスト済み」のときだけ開ける。そうでなければ設計のステップまでにする
-  const tested = session.tested === true;
-  const step = tested ? toInteger(session.step, STEP.read, STEP.result) : toInteger(session.step, STEP.read, STEP.reinforce);
+  const design = sanitizeDesign(request, session.design, catalog);
+  // データを書きかえたあとなどで、設計の一部が使えなくなっていることがある。
+  // テスト済みは「すべての部品が決まっている」ときだけ認め、ステップもその設計で入れるところまで戻す
+  // （材料が決まっていないのに加工のステップを開くと、画面が描けなくなるため）
+  const tested = session.tested === true && allMaterialsChosen(request, design) && allProcessesChosen(request, design);
+  let step = toInteger(session.step, STEP.read, STEP.result);
+  while (step > STEP.read && !canEnterStep({ design, tested }, request, step)) step -= 1;
   return {
     requestId: request.id,
     step,
     partId,
-    design: sanitizeDesign(request, session.design, catalog),
+    design,
     tested,
     newEntries: [],
     prediction: null,

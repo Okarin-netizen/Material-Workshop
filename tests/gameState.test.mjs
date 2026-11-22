@@ -115,7 +115,7 @@ test('知らない依頼・材料や、こわれた保存データは捨てて�
   assert.deepEqual(progress.zukan.materials, ['sugi']);
   assert.deepEqual(progress.zukan.processes, []);
   assert.equal(progress.session.design.materials.seat, null);
-  assert.equal(progress.session.step, STEP.reinforce, 'テスト済みでないので結果画面には戻らない');
+  assert.equal(progress.session.step, STEP.material, '材料が使えなくなったので、材料のステップまで戻る');
   assert.equal(normalizeProgress({ version: 999 }, CATALOG).records.parkBench, undefined);
   assert.equal(normalizeProgress(null, CATALOG).furigana, true);
 });
@@ -162,4 +162,25 @@ test('結果の演出はテスト直後だけ（finishReveal で終わる）', (
   progress = finishReveal(progress);
   assert.equal(progress.session.reveal, false);
   assert.equal(normalizeProgress(JSON.parse(JSON.stringify(playAnswer(createProgress(), request, ANSWERS.parkBench.model))), CATALOG).session.reveal, false);
+});
+
+test('読み込んだ途中の依頼は、その設計で入れるステップまで戻す（加工のステップで材料がない、を作らない）', () => {
+  const request = requestById('stationBench');
+  const model = ANSWERS.stationBench.model;
+  const saved = (session) => ({ version: 1, records: {}, session: { requestId: request.id, partId: 'seat', ...session } });
+
+  // 脚の材料がデータから消えた、という想定：加工のステップにいても、材料のステップに戻る
+  const lostMaterial = { ...model.materials, frame: 'unobtainium' };
+  let progress = normalizeProgress(saved({ step: STEP.process, design: { ...model, materials: lostMaterial } }), CATALOG);
+  assert.equal(progress.session.step, STEP.material);
+
+  // 「テスト済み」でも設計が欠けていれば結果画面は開かない
+  progress = normalizeProgress(saved({ step: STEP.result, tested: true, design: { ...model, materials: lostMaterial } }), CATALOG);
+  assert.equal(progress.session.tested, false);
+  assert.equal(progress.session.step, STEP.material);
+
+  // 設計がそろっていてテスト済みなら、結果画面のまま
+  progress = normalizeProgress(saved({ step: STEP.result, tested: true, design: model }), CATALOG);
+  assert.equal(progress.session.tested, true);
+  assert.equal(progress.session.step, STEP.result);
 });

@@ -6,6 +6,7 @@ import { reinforcementAvailability } from '../../../core/rules.js';
 import { reinforcementCost } from '../../../core/scoring.js';
 import { toggleReinforcement, runTest } from '../../../core/gameState.js';
 import { renderChoiceCard } from '../../components/choiceCard.js';
+import { renderProsCons } from '../../components/prosCons.js';
 
 /**
  * @param {import('../../../main.js').App} app
@@ -69,19 +70,12 @@ function renderReinforcementCard(app, request, entry) {
         h('span', { class: 'choice-card__price' }, fill(UI.stepReinforce.costPlus, { cost: formatNumber(reinforcementCost(request, entry.id, app.catalog)) })),
       ),
       h('span', { class: 'choice-card__text' }, entry.detail ?? reinforcement.summary),
-      availability.ok ? renderProsCons(reinforcement) : h('span', { class: 'choice-card__reason' }, h('strong', {}, UI.stepReinforce.unavailable), availability.reason),
+      availability.ok ? renderGoodBad(reinforcement) : h('span', { class: 'choice-card__reason' }, h('strong', {}, UI.stepReinforce.unavailable), availability.reason),
     ],
   );
 }
 
-function renderProsCons(reinforcement) {
-  if (!reinforcement.good && !reinforcement.bad) {
-    return h('span', { class: 'choice-card__sub' }, reinforcement.summary);
-  }
-  return h(
-    'span',
-    { class: 'pros-cons' },
-    reinforcement.good ? h('span', { class: 'pros-cons__good' }, `${UI.stepReinforce.good} `, reinforcement.good) : null,
-    reinforcement.bad ? h('span', { class: 'pros-cons__bad' }, `${UI.stepReinforce.bad} `, reinforcement.bad) : null,
-  );
+/** よい点・注意点。どちらも書いていない工夫は、かわりに短い説明を出す */
+function renderGoodBad(reinforcement) {
+  return renderProsCons(reinforcement) ?? h('span', { class: 'choice-card__sub' }, reinforcement.summary);
 }

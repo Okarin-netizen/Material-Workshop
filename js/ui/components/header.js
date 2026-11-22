@@ -24,8 +24,20 @@ export function renderHeader(app) {
     h(
       'nav',
       { class: 'header-nav', 'aria-label': plain(UI.header.menu) },
-      furiganaButton(app),
-      soundButton(app),
+      toggleButton(app, {
+        key: 'header-furigana',
+        on: app.progress.furigana,
+        label: UI.header.furiganaLabel,
+        texts: [UI.header.furiganaOn, UI.header.furiganaOff],
+        toggle: (progress) => setFurigana(progress, !progress.furigana),
+      }),
+      toggleButton(app, {
+        key: 'header-sound',
+        on: app.progress.sound,
+        label: UI.header.soundLabel,
+        texts: [UI.header.soundOn, UI.header.soundOff],
+        toggle: (progress) => setSound(progress, !progress.sound),
+      }),
       navButton(app, 'board', UI.header.board),
       navButton(app, 'zukan', fill(UI.header.zukanCount, { count: zukanCount, total: zukanTotal })),
       navButton(app, 'summary', UI.header.summary),
@@ -33,35 +45,28 @@ export function renderHeader(app) {
   );
 }
 
-function furiganaButton(app) {
-  const on = app.progress.furigana;
+/**
+ * 「ふりがな あり／なし」「音 あり／なし」のような、押すたびに切りかわるボタン。
+ * @param {import('../../main.js').App} app
+ * @param {Object} options
+ * @param {string} options.key  フォーカスを戻すための名前（juice.js も header-sound を見ている）
+ * @param {boolean} options.on
+ * @param {string} options.label 読み上げ用の名前
+ * @param {[string, string]} options.texts [あり のときの文, なし のときの文]
+ * @param {(progress: any) => any} options.toggle
+ */
+function toggleButton(app, { key, on, label, texts, toggle }) {
   return h(
     'button',
     {
-      class: `header-btn header-btn--furigana${on ? ' is-on' : ''}`,
+      class: `header-btn header-btn--toggle${on ? ' is-on' : ''}`,
       type: 'button',
       'aria-pressed': String(on),
-      dataset: { focusKey: 'header-furigana' },
-      onClick: () => app.update((progress) => setFurigana(progress, !progress.furigana)),
+      dataset: { focusKey: key },
+      onClick: () => app.update(toggle),
     },
-    h('span', { class: 'visually-hidden' }, UI.header.furiganaLabel),
-    on ? UI.header.furiganaOn : UI.header.furiganaOff,
-  );
-}
-
-function soundButton(app) {
-  const on = app.progress.sound;
-  return h(
-    'button',
-    {
-      class: `header-btn header-btn--furigana${on ? ' is-on' : ''}`,
-      type: 'button',
-      'aria-pressed': String(on),
-      dataset: { focusKey: 'header-sound' },
-      onClick: () => app.update((progress) => setSound(progress, !progress.sound)),
-    },
-    h('span', { class: 'visually-hidden' }, UI.header.soundLabel),
-    on ? UI.header.soundOn : UI.header.soundOff,
+    h('span', { class: 'visually-hidden' }, label),
+    on ? texts[0] : texts[1],
   );
 }
 

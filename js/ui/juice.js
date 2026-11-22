@@ -7,19 +7,15 @@
 // 各画面のコードはさわらずにすむ。動きを減らす設定のときは動かさない（音だけ鳴る）。
 
 import { playUiSound } from './sound.js';
+import { prefersReducedMotion } from './motion.js';
 import { JUICE } from '../core/constants.js';
 
 /** @type {{key: string, kind: string, meters: (number|null)[], cost: string, art: string, view: string}|null} */
 let before = null;
 
-function reducedMotion() {
-  return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-}
-
-/** 今の画面の「場所」。ちがっていれば別の画面・ステップに進んだということ */
+/** 今の画面の「場所」（main.js が #app に書く）。ちがっていれば別の画面・ステップに進んだということ */
 function viewKey() {
-  const step = document.querySelector('.step-btn[aria-current="step"]');
-  return `${document.querySelector('main')?.className ?? ''}|${step?.textContent ?? ''}`;
+  return document.getElementById('app')?.dataset.view ?? '';
 }
 
 function readMeters() {
@@ -43,7 +39,7 @@ function readArt() {
  * @param {string} className
  */
 function replay(element, className) {
-  if (!element || reducedMotion()) return;
+  if (!element || prefersReducedMotion()) return;
   element.classList.remove(className);
   void element.getBoundingClientRect(); // つけ直しを反映させる
   element.classList.add(className);
@@ -105,16 +101,8 @@ function animateMeters(previous) {
     const old = previous[index];
     if (value === null || Number(value) === old) return;
     const meter = bar.closest('.meter');
-    if (!reducedMotion()) {
-      // はじめて値が出たときは 0 から伸ばす
-      const fillBar = bar.querySelector('i');
-      const target = fillBar.style.width;
-      fillBar.style.transition = 'none';
-      fillBar.style.width = `${old ?? 0}%`;
-      void fillBar.getBoundingClientRect();
-      fillBar.style.transition = '';
-      fillBar.style.width = target;
-    }
+    // はじめて値が出たときは 0 から伸ばす
+    growFrom(bar.querySelector('i'), `${old ?? 0}%`);
     if (old === null) return;
     const diff = Number(value) - old;
     if (Math.abs(diff) < JUICE.minMeterDiff) return;
@@ -129,11 +117,21 @@ function animateMeters(previous) {
 
 function animateCost(previousWidth) {
   const fillBar = document.querySelector('.cost-bar__track i');
-  if (!fillBar || !previousWidth || fillBar.style.width === previousWidth || reducedMotion()) return;
+  if (fillBar && previousWidth && fillBar.style.width !== previousWidth) growFrom(fillBar, previousWidth);
+}
+
+/**
+ * バーを、前の幅から今の幅まで CSS の transition で動かす。
+ * （描き直したバーは最初から今の幅なので、いったん前の幅に戻してから今の幅にする）
+ * @param {HTMLElement|null} fillBar
+ * @param {string} fromWidth 例 '40%'
+ */
+function growFrom(fillBar, fromWidth) {
+  if (!fillBar || prefersReducedMotion()) return;
   const target = fillBar.style.width;
   fillBar.style.transition = 'none';
-  fillBar.style.width = previousWidth;
-  void fillBar.getBoundingClientRect();
+  fillBar.style.width = fromWidth;
+  void fillBar.getBoundingClientRect(); // 前の幅を一度反映させる
   fillBar.style.transition = '';
   fillBar.style.width = target;
 }

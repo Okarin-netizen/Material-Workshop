@@ -5,10 +5,10 @@ import { UI } from '../../../data/uiText.js';
 import { CATEGORIES } from '../../../data/traits.js';
 import { STEP } from '../../../core/constants.js';
 import { allMaterialsChosen } from '../../../core/rules.js';
-import { chooseMaterial, goToStep, selectPart } from '../../../core/gameState.js';
+import { chooseMaterial } from '../../../core/gameState.js';
 import { renderChoiceCard, renderSwatch } from '../../components/choiceCard.js';
-import { renderPartTabs, nextUndonePart } from '../../components/partTabs.js';
-import { renderStepFooter } from '../../components/stepFooter.js';
+import { renderPartTabs } from '../../components/partTabs.js';
+import { renderPartStepFooter } from '../../components/stepFooter.js';
 
 /**
  * @param {import('../../../main.js').App} app
@@ -60,22 +60,10 @@ function renderMaterialCard(app, request, part, materialId) {
   );
 }
 
-/** 次の部品がまだなら「次の部品へ」、全部決まったら「加工方法を選ぶ」 */
 function renderMaterialFooter(app, request, part, isDone) {
-  const next = isDone(part.id) ? nextUndonePart(request, part.id, isDone) : null;
-  if (next) {
-    return renderStepFooter({
-      label: fill(UI.stepMaterial.nextPart, { part: next.name }),
-      enabled: true,
-      key: 'next-part',
-      onClick: () => app.update((progress) => selectPart(progress, next.id)),
-    });
-  }
-  return renderStepFooter({
-    label: UI.stepMaterial.next,
-    enabled: allMaterialsChosen(request, app.progress.session.design),
-    note: UI.stepMaterial.needAll,
-    key: 'next-step',
-    onClick: () => app.update((progress) => goToStep(selectPart(progress, request.parts[0].id), request, STEP.process)),
+  return renderPartStepFooter(app, request, part, isDone, {
+    texts: UI.stepMaterial,
+    allDone: allMaterialsChosen(request, app.progress.session.design),
+    nextStep: STEP.process,
   });
 }

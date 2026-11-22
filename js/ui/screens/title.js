@@ -68,6 +68,5 @@ function start(app) {
     app.navigate('board');
     return;
   }
-  app.update((progress) => startRequest(progress, first, app.catalog));
-  app.navigate('workshop');
+  app.updateAndNavigate((progress) => startRequest(progress, first, app.catalog), 'workshop');
 }
