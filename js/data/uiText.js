@@ -20,6 +20,9 @@ export const UI = {
   },
 
   title: {
+    // ロゴは1文字ずつはずませるので、文字ごとに分けておく（つなげると appName と同じ）
+    logo: ['マ', 'テ', 'リ', 'ア', 'ル', '{工房|こうぼう}'],
+    ribbon: 'えらんで、つくって、{試|ため}す！',
     lead: '{材料|ざいりょう}と{加工|かこう}の{技術|ぎじゅつ}で、{依頼人|いらいにん}の{願|ねが}いをかなえよう！',
     start: 'はじめる',
     resume: 'つづきから',
@@ -28,6 +31,11 @@ export const UI = {
     reset: '{最初|さいしょ}からやり{直|なお}す',
     about: 'このアプリについて',
     version: 'バージョン {version}',
+    startHint: 'Enter でもはじめられます',
+    showcase: '{依頼|いらい}{number}「{title}」',
+    showcaseLabel: '{作品|さくひん}を{見|み}る（{押|お}すと{次|つぎ}の{作品|さくひん}）',
+    rank: '{工房|こうぼう}の{称号|しょうごう}「{title}」　★{stars}',
+    rankNext: 'あと★{need}で「{title}」',
   },
 
   about: {

@@ -1,0 +1,391 @@
+/* タイトル画面（ゲームの顔）。js/ui/screens/title.js と組で読む。
+   動きは「最初に1回だけ（.is-intro）」と「ずっと小さく（ロゴのゆれ・かけら・光）」の2種類。
+   動きを減らす設定のときは base.css の指定でアニメーションがすべて止まる。 */
+
+.screen--title {
+  position: relative;
+  align-items: center;
+  justify-content: safe center;
+  padding: 16px;
+  overflow: auto;
+  isolation: isolate;
+}
+
+/* うしろの光（ゆっくり回る）。かけらの箱の中に描いて、画面からはみ出してスクロールが出ないようにする */
+.title-chips::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  top: 50%;
+  left: 50%;
+  width: 180vmax;
+  height: 180vmax;
+  margin: -90vmax 0 0 -90vmax;
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.28) 0deg 9deg, rgba(255, 255, 255, 0) 9deg 18deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0, #000 18%, transparent 46%);
+  mask-image: radial-gradient(circle, #000 0, #000 18%, transparent 46%);
+  animation: title-rays 90s linear infinite;
+  pointer-events: none;
+}
+
+.title-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(760px, 100%);
+  padding: 14px 24px 12px;
+  border: 5px solid var(--brown);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 0, #fff6dc 0, rgba(255, 246, 220, 0) 60%),
+    var(--cream);
+  box-shadow: 0 8px 0 rgba(60, 35, 10, 0.28);
+  text-align: center;
+}
+
+.is-intro .title-card {
+  animation: title-card-in 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+/* ── ロゴ ── */
+
+.title-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.15;
+}
+
+.title-logo__ribbon {
+  padding: 2px 18px;
+  border-radius: 999px;
+  background: var(--brown);
+  color: var(--cream);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  transform: rotate(-2deg);
+}
+
+.title-logo__ribbon rt {
+  color: var(--yellow);
+}
+
+.title-logo__word {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.title-logo__char {
+  display: inline-block;
+  padding: 0 1px;
+  color: var(--c, var(--orange));
+  /* 太い茶色のふち＋下に落ちる影（ぷっくりした文字） */
+  text-shadow:
+    3px 0 0 var(--brown), -3px 0 0 var(--brown), 0 3px 0 var(--brown), 0 -3px 0 var(--brown),
+    2px 2px 0 var(--brown), -2px 2px 0 var(--brown), 2px -2px 0 var(--brown), -2px -2px 0 var(--brown),
+    0 7px 0 var(--brown-dark);
+  transform-origin: 50% 100%;
+  animation: title-bob 2.8s ease-in-out calc(var(--i) * 0.12s) infinite;
+}
+
+/* 文字ごとの色：材料の色（木・黄・緑・青・赤）、「工房」はオレンジ */
+.title-logo__char:nth-child(1) { --c: #ff8a3d; }
+.title-logo__char:nth-child(2) { --c: #ffd257; }
+.title-logo__char:nth-child(3) { --c: #6cc35f; }
+.title-logo__char:nth-child(4) { --c: #5ba8e6; }
+.title-logo__char:nth-child(5) { --c: #ff6f61; }
+.title-logo__char:nth-child(6) { --c: #ff8a3d; margin-left: 6px; }
+
+.title-logo__char rt {
+  color: var(--brown);
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-shadow: none;
+}
+
+.is-intro .title-logo__char {
+  animation:
+    title-drop 0.5s cubic-bezier(0.25, 1.5, 0.45, 1) calc(0.12s + var(--i) * 0.07s) both,
+    title-bob 2.8s ease-in-out calc(0.9s + var(--i) * 0.12s) infinite;
+}
+
+.title-lead {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ── 作品のショーケース（押すと次の作品） ── */
+
+.title-showcase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--tap);
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.title-showcase:hover {
+  transform: scale(1.03);
+}
+
+.title-showcase:active {
+  transform: scale(0.97);
+}
+
+.title-showcase__stage {
+  position: relative;
+  display: block;
+  width: min(300px, 70vw);
+  aspect-ratio: 3 / 2;
+  max-height: 19vh;
+}
+
+.title-showcase__stage svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 85%;
+}
+
+.title-showcase__stage svg.is-entering {
+  animation: title-swap 0.42s cubic-bezier(0.25, 1.5, 0.45, 1) both;
+}
+
+.title-showcase__caption {
+  padding: 1px 12px;
+  border-radius: 999px;
+  background: var(--cream-deep);
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ── 称号（星を集めた人だけ） ── */
+
+.title-rank {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 10px;
+  padding: 3px 14px;
+  border: 3px solid var(--yellow);
+  border-radius: 999px;
+  background: #fff7d6;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.title-rank__next {
+  color: var(--orange-dark);
+}
+
+/* ── ボタン ── */
+
+.title-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* 「はじめる」はいちばん大きく、光の輪でさそう */
+.title-start {
+  min-width: 220px;
+  font-size: 22px;
+  animation: title-glow 2s ease-in-out 1s infinite;
+}
+
+.title-start:hover {
+  transform: translateY(-2px);
+}
+
+.title-start__hint {
+  opacity: 0.9;
+}
+
+.title-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+}
+
+.title-version {
+  margin-top: -6px;
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── うしろに浮かぶ材料のかけら（木・金属・プラスチック） ── */
+
+.title-chips {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.title-chip {
+  position: absolute;
+  display: block;
+  border: 3px solid var(--brown);
+  opacity: 0.9;
+  animation: title-float calc(5s + var(--n) * 0.45s) ease-in-out calc(var(--n) * -0.7s) infinite alternate;
+}
+
+.title-chip--wood {
+  width: 54px;
+  height: 22px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(90deg, #e0a663 0 7px, #cf914c 7px 9px);
+}
+
+.title-chip--metal {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cream) 0 5px, var(--brown) 5px 7px, #c9d3dc 7px 11px, #a6b3bf 11px);
+}
+
+.title-chip--plastic {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ffffff 0 18%, #6ec7f0 18%);
+}
+
+.title-chip:nth-child(1) { top: 10%; left: 6%; --r: -18deg; }
+.title-chip:nth-child(2) { top: 22%; left: 88%; --r: 20deg; }
+.title-chip:nth-child(3) { top: 64%; left: 9%; --r: 10deg; }
+.title-chip:nth-child(4) { top: 78%; left: 84%; --r: -12deg; }
+.title-chip:nth-child(5) { top: 46%; left: 3%; --r: 30deg; }
+.title-chip:nth-child(6) { top: 52%; left: 93%; --r: -25deg; }
+.title-chip:nth-child(7) { top: 86%; left: 18%; --r: 8deg; }
+.title-chip:nth-child(8) { top: 6%; left: 76%; --r: -6deg; }
+.title-chip:nth-child(9) { top: 30%; left: 14%; --r: 16deg; }
+
+/* ── 動き ── */
+
+@keyframes title-rays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes title-card-in {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+}
+
+/* 上から落ちて、ぐにゅっとつぶれて、はね返る */
+@keyframes title-drop {
+  0% {
+    transform: translateY(-70px) scale(0.7, 1.2);
+    opacity: 0;
+  }
+  55% {
+    transform: translateY(0) scale(1.25, 0.75);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(-6px) scale(0.95, 1.06);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes title-bob {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes title-swap {
+  0% {
+    transform: scale(0.5, 1.3) translateY(-20px);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12, 0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes title-glow {
+  0%,
+  100% {
+    box-shadow: 0 4px 0 var(--orange-shadow), 0 0 0 0 rgba(255, 138, 61, 0.55);
+  }
+  60% {
+    box-shadow: 0 4px 0 var(--orange-shadow), 0 0 0 12px rgba(255, 138, 61, 0);
+  }
+}
+
+@keyframes title-float {
+  from {
+    transform: translateY(0) rotate(var(--r, 0deg));
+  }
+  to {
+    transform: translateY(-18px) rotate(calc(var(--r, 0deg) + 14deg));
+  }
+}
+
+/* ── 画面の大きさ ── */
+
+/* タッチの端末には Enter キーの案内はいらない */
+@media (hover: none) and (pointer: coarse) {
+  .title-start__hint {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .title-logo__word {
+    font-size: 38px;
+  }
+
+  .title-start {
+    min-width: 0;
+  }
+
+  .title-chip:nth-child(n + 6) {
+    display: none;
+  }
+}
+
+@media (max-height: 620px) {
+  .title-logo__word {
+    font-size: 44px;
+  }
+
+  .title-showcase__stage {
+    max-height: 16vh;
+  }
+}
