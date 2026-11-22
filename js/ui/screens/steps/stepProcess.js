@@ -5,10 +5,11 @@ import { h, fill, formatNumber } from '../../dom.js';
 import { UI } from '../../../data/uiText.js';
 import { STEP } from '../../../core/constants.js';
 import { allProcessesChosen, processAvailability } from '../../../core/rules.js';
-import { chooseProcess, goToStep, selectPart } from '../../../core/gameState.js';
+import { chooseProcess } from '../../../core/gameState.js';
 import { renderChoiceCard } from '../../components/choiceCard.js';
-import { renderPartTabs, nextUndonePart } from '../../components/partTabs.js';
-import { renderStepFooter } from '../../components/stepFooter.js';
+import { renderPartTabs } from '../../components/partTabs.js';
+import { renderPartStepFooter } from '../../components/stepFooter.js';
+import { renderProsCons } from '../../components/prosCons.js';
 
 /**
  * @param {import('../../../main.js').App} app
@@ -54,38 +55,16 @@ function renderProcessCard(app, request, part, material, processId) {
         h('span', { class: 'choice-card__price' }, fill(UI.stepProcess.costPlus, { cost: formatNumber(process.costPerUnit * part.size) })),
       ),
       availability.ok
-        ? [h('span', { class: 'choice-card__text' }, process.summary), renderProcessNote(part.processNotes?.[processId])]
+        ? [h('span', { class: 'choice-card__text' }, process.summary), renderProsCons(part.processNotes?.[processId])]
         : h('span', { class: 'choice-card__reason' }, h('strong', {}, UI.stepProcess.unsuitable), availability.reason),
     ],
   );
 }
 
-/** この依頼での、その加工方法のよい点（◯）と注意点（△） */
-function renderProcessNote(note) {
-  if (!note) return null;
-  return h(
-    'span',
-    { class: 'pros-cons' },
-    note.good ? h('span', { class: 'pros-cons__good' }, `${UI.stepReinforce.good} `, note.good) : null,
-    note.bad ? h('span', { class: 'pros-cons__bad' }, `${UI.stepReinforce.bad} `, note.bad) : null,
-  );
-}
-
 function renderProcessFooter(app, request, part, isDone) {
-  const next = isDone(part.id) ? nextUndonePart(request, part.id, isDone) : null;
-  if (next) {
-    return renderStepFooter({
-      label: fill(UI.stepProcess.nextPart, { part: next.name }),
-      enabled: true,
-      key: 'next-part',
-      onClick: () => app.update((progress) => selectPart(progress, next.id)),
-    });
-  }
-  return renderStepFooter({
-    label: UI.stepProcess.next,
-    enabled: allProcessesChosen(request, app.progress.session.design),
-    note: UI.stepProcess.needAll,
-    key: 'next-step',
-    onClick: () => app.update((progress) => goToStep(progress, request, STEP.reinforce)),
+  return renderPartStepFooter(app, request, part, isDone, {
+    texts: UI.stepProcess,
+    allDone: allProcessesChosen(request, app.progress.session.design),
+    nextStep: STEP.reinforce,
   });
 }

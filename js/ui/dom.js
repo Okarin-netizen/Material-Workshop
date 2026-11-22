@@ -35,18 +35,22 @@ export function h(tag, props = {}, ...children) {
 export function s(tag, attrs = {}, ...children) {
   const element = document.createElementNS(SVG_NS, tag);
   for (const [key, value] of Object.entries(attrs)) {
-    if (value !== undefined && value !== null && value !== false) element.setAttribute(key, String(value));
+    if (isPresent(value)) element.setAttribute(key, String(value));
   }
-  for (const child of children.flat(Infinity)) {
-    if (child === null || child === undefined || child === false) continue;
+  for (const child of children.flat(Infinity).filter(isPresent)) {
     element.append(child instanceof Node ? child : document.createTextNode(String(child)));
   }
   return element;
 }
 
+/** null・undefined・false は「書かなかった」ものとして飛ばす（cond ? 要素 : null と書けるように） */
+function isPresent(value) {
+  return value !== undefined && value !== null && value !== false;
+}
+
 function applyProps(element, props) {
   for (const [key, value] of Object.entries(props)) {
-    if (value === undefined || value === null || value === false) continue;
+    if (!isPresent(value)) continue;
     if (key === 'class') element.className = value;
     else if (key === 'text') element.textContent = String(value);
     else if (key === 'value') element.value = String(value);
@@ -67,10 +71,8 @@ function applyStyle(element, style) {
 }
 
 function appendChildren(element, children) {
-  for (const child of children.flat(Infinity)) {
-    if (child === null || child === undefined || child === false) continue;
-    if (child instanceof Node) element.append(child);
-    else element.append(textChild(String(child)));
+  for (const child of children.flat(Infinity).filter(isPresent)) {
+    element.append(child instanceof Node ? child : textChild(String(child)));
   }
 }
 

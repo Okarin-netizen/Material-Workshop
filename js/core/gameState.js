@@ -316,11 +316,8 @@ export function totalStars(progress) {
  * @returns {number}
  */
 export function titleIndex(stars) {
-  let index = 0;
-  TITLES.forEach((title, i) => {
-    if (stars >= title.stars) index = i;
-  });
-  return index;
+  // TITLES は必要な星の少ない順。届いている中でいちばん上の称号（最初の称号は星0で届く）
+  return Math.max(0, TITLES.findLastIndex((title) => stars >= title.stars));
 }
 
 /**

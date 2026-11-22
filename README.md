@@ -59,6 +59,7 @@ js/
     constants.js           星の基準点や文字数の上限などの決まった数
     rubyParse.js           {漢字|かんじ} の書き方を読みとる
     rules.js               選べる加工・工夫の判定、設計の整理
+    navigation.js          画面の行き来の履歴（「もどる」の行き先）
     scoring.js             設計の評価（特性 → テストの合否 → 指標 → 得点 → 星）
     gameState.js           進み具合の変更（材料を選ぶ、テストする など）
     storage.js             localStorage への保存と読みこみ
@@ -66,6 +67,7 @@ js/
   ui/
     dom.js                 要素を作る小さな関数 h() / s()（文字列は自動でふりがな付きになる）
     juice.js               操作の手ごたえ（はずむ・ゆれる・指標の差・数字キー）。描き直しの前後をくらべて動かす
+    motion.js              「動きを減らす」設定を見る（juice.js と結果の演出で共通）
     sound.js               効果音（Web Audio。結果の音と操作の音）
     components/            ヘッダー、ステップ表示、カード、メーター、レーダーチャート など
     art/                   製品の絵（インライン SVG）。依頼ごとの描き方
@@ -114,12 +116,18 @@ tests/
 python3 -m http.server 8000
 # → ブラウザで http://localhost:8000/ を開く
 
-# 単体テスト（Node.js 18 以上）
+# 単体テスト（Node.js 22 以上を推奨。18・20 でも動くが、どちらも Node.js のサポートが終わっている）
 node --test
 
 # E2E（Playwright が入っている環境で。スクリーンショットの保存先を指定できる）
 node tests/e2e/playthrough.e2e.cjs ../material-koubou-shots
 ```
+
+## 対応ブラウザ
+
+2022年以降のブラウザで動きます（Chrome / Edge 98 以上、Safari 15.4 以上（iPad は iPadOS 15.4 以上）、Firefox 104 以上）。
+`Array.prototype.at` / `findLastIndex`、`structuredClone`、`<dialog>` を使っているためです。学校の Chromebook・iPad は自動更新されていれば問題ありません。
+外部ライブラリを使っていないので、ライブラリの更新やサポート切れの心配はありません。
 
 ## GitHub Pages で公開する
 

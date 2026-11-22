@@ -1032,6 +1032,27 @@
   }
 }
 
+/* 横は広いが低い画面（1024×600 など）：結果の評価の列で、依頼人のコメントが下で切れないようにする。
+   レーダーチャートを小さくしてよいことにし、文字を少しつめる */
+@media (min-width: 1024px) and (max-height: 680px) {
+  .radar-frame {
+    min-height: 72px;
+  }
+
+  .verdict__text {
+    font-size: 21px;
+  }
+
+  .comment {
+    padding: 5px 10px;
+  }
+
+  .comment__text {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+}
+
 @media (max-width: 600px) {
   .btn--big {
     min-width: 0;

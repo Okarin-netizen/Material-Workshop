@@ -374,9 +374,10 @@ async function checkSummaryPrint(page) {
   else ok('名前は保存されていない');
   await page.emulateMedia({ media: 'print' });
   await page.screenshot({ path: path.join(SHOTS, `${String(++shotCount).padStart(2, '0')}-summary-print.png`), fullPage: true });
-  await page.emulateMedia({ media: 'screen' });
+  // page.pdf() は emulateMedia の指定に従う。screen に戻す前に作らないと、画面用の見た目で PDF になってしまう
   const pdfPath = path.join(SHOTS, 'summary.pdf');
   await page.pdf({ path: pdfPath, format: 'A4', preferCSSPageSize: true, printBackground: true });
+  await page.emulateMedia({ media: 'screen' });
   const pages = (fs.readFileSync(pdfPath, 'latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
   if (pages === 1) ok('まとめの PDF は A4 1枚');
   else problem(`まとめの PDF が ${pages} 枚になった`);

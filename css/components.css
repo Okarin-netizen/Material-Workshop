@@ -106,7 +106,7 @@
   color: var(--yellow);
 }
 
-.header-btn--furigana.is-on {
+.header-btn--toggle.is-on {
   background: var(--yellow);
   color: var(--brown-dark);
 }
@@ -464,7 +464,7 @@
 }
 
 .meter {
-  padding: 4px 6px;
+  padding: 4px 3px; /* 「耐久性（たいきゅうせい）」のふりがなが、せまい画面でも横に切れないように */
   border-radius: 10px;
   background: var(--cream-deep);
   text-align: center;

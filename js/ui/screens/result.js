@@ -8,11 +8,18 @@ import { goToStep, recordOf, setReason, finishReveal, isZukanComplete } from '..
 import { METRICS } from '../../data/traits.js';
 import { TITLES } from '../../data/rewards.js';
 import { playResultSound } from '../sound.js';
+import { prefersReducedMotion } from '../motion.js';
 import { renderProductArt } from '../art/index.js';
 import { renderRadarChart } from '../components/radarChart.js';
 import { renderStars } from '../components/stars.js';
 import { renderClientArt } from '../components/clientArt.js';
 import { plain } from '../components/ruby.js';
+
+/** テスト1つを見せる間隔（秒）。合格・不合格を1つずつ出し、そのあと星を出す。全部で2秒くらいに収める */
+const REVEAL_STEP = 0.35;
+
+/** 紙吹雪の色（ゲームの色に合わせる） */
+const CONFETTI_COLORS = ['#ff8a3d', '#ffd257', '#4fae45', '#3f74b0', '#d8481f', '#ffffff'];
 
 /**
  * @param {import('../../main.js').App} app
@@ -24,10 +31,8 @@ export function renderResult(app, request, evaluation) {
   const { session } = app.progress;
   const revealing = session.reveal && !prefersReducedMotion();
   if (session.reveal) {
-    if (app.progress.sound) {
-      const step = revealing ? REVEAL_STEP : 0.05;
-      playResultSound({ tests: evaluation.tests, stars: evaluation.stars, newTitle: session.newTitle !== null }, step);
-    }
+    // 音が「なし」のときは sound.js が鳴らさない
+    playResultSound({ tests: evaluation.tests, stars: evaluation.stars, newTitle: session.newTitle !== null }, revealing ? REVEAL_STEP : 0.05);
     // 演出は1回だけ。描き直したときにくり返さないよう、すぐに「見せた」にしておく
     queueMicrotask(() => app.updateQuietly(finishReveal));
   }
@@ -44,13 +49,6 @@ export function renderResult(app, request, evaluation) {
     renderEvaluationPanel(app, request, evaluation, revealing),
     renderLearningPanel(app, request),
   );
-}
-
-/** テスト1つを見せる間隔（秒）。合格・不合格を1つずつ出し、そのあと星を出す。全部で2秒くらいに収める */
-const REVEAL_STEP = 0.35;
-
-function prefersReducedMotion() {
-  return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
 // ── 左：テスト ───────────────────────────────
@@ -109,9 +107,6 @@ function renderEvaluationPanel(app, request, evaluation, revealing) {
     h('div', { class: 'comment' }, renderClientArt(request.client.look, 48), h('p', { class: 'comment__text' }, comment)),
   );
 }
-
-/** 紙吹雪の色（ゲームの色に合わせる） */
-const CONFETTI_COLORS = ['#ff8a3d', '#ffd257', '#4fae45', '#3f74b0', '#d8481f', '#ffffff'];
 
 /**
  * 依頼達成をほめる紙吹雪。星が出るのと同時に、星のあたりから広がって落ちる。星が多いほど多い。
