@@ -44,3 +44,10 @@ export const STEP = Object.freeze({ read: 1, material: 2, process: 3, reinforce:
  * confetti：依頼達成のときの紙吹雪の枚数（星の数ごと）
  */
 export const JUICE = Object.freeze({ minMeterDiff: 1, diffShowMs: 1100, confetti: Object.freeze([0, 14, 22, 36]) });
+
+/**
+ * タイトル画面（js/ui/screens/title.js）の調整用の数。
+ * showcaseMs：作品のショーケースが次の作品に替わるまでの時間（ミリ秒）
+ * chips：うしろにふわふわ浮かぶ材料のかけらの数
+ */
+export const TITLE_SCREEN = Object.freeze({ showcaseMs: 3200, chips: 9 });
