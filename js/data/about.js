@@ -17,6 +17,13 @@ export const CREDITS = {
 /** @type {ChangelogEntry[]} 新しい順 */
 export const CHANGELOG = [
   {
+    version: '1.4.1',
+    date: '2026-11-22',
+    changes: [
+      'まとめに、{依頼|いらい}ごとにいちばん{得点|とくてん}の{高|たか}かった{設計|せっけい}を{載|の}せるようにしました。{行|ぎょう}の★と{合計|ごうけい}の★がそろいます。',
+    ],
+  },
+  {
     version: '1.4.0',
     date: '2026-11-22',
     changes: [
