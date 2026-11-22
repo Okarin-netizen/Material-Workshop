@@ -211,7 +211,18 @@ async function playAllRequests(browser, ANSWERS, REQUESTS) {
       await click(page, 'header-board');
     }
 
-    await playDesign(page, request, answer, { screenshots: detailed });
+    const celebrate = request.id === 'parkBench';
+    await playDesign(page, request, answer, { screenshots: detailed, skipReveal: !celebrate });
+    if (celebrate) {
+      // 依頼達成の演出：星が出るころに紙吹雪が舞う。クリックでとばせる
+      const pieces = await page.locator('.confetti__piece').count();
+      await page.waitForTimeout(1700);
+      await shot(page, `${request.id}-result-confetti`);
+      await page.locator('#tests-heading').click();
+      const hidden = await page.locator('.confetti').evaluate((el) => getComputedStyle(el).display === 'none');
+      if (pieces > 0 && hidden) ok(`依頼達成で紙吹雪（${pieces}枚）が舞い、クリックで消える`);
+      else problem(`紙吹雪がおかしい（${pieces}枚, とばすと消える:${hidden}）`);
+    }
     const stars = await starsOnResult(page);
     if (stars !== 3) problem(`依頼${request.number}「${answer.label}」が★${stars}`);
     else ok(`依頼${request.number} 模範解「${answer.label}」→ ★3`);
@@ -304,8 +315,8 @@ async function checkResume(page) {
 async function checkKeyboard(page) {
   console.log('\n[キーボード操作]');
   await page.goto(BASE);
-  // Tab で「はじめる」まで進み、Enter で依頼ボードへ
-  let reached = false;
+  // タイトルを開いた時点で「はじめる」にフォーカスがあり、Enter だけで依頼ボードへ進める
+  let reached = await page.evaluate(() => document.activeElement?.dataset?.focusKey === 'title-start');
   for (let i = 0; i < 12 && !reached; i += 1) {
     await page.keyboard.press('Tab');
     reached = await page.evaluate(() => document.activeElement?.dataset?.focusKey === 'title-start');
@@ -333,6 +344,18 @@ async function checkKeyboard(page) {
   const stillFocused = await page.evaluate(() => document.activeElement?.dataset?.focusKey);
   if (picked === 'true' && stillFocused === 'material-seat-sugi') ok('Enter で材料カードを選べ、描き直してもフォーカスが残る');
   else problem(`キーボードで材料を選べない（${picked}, フォーカス ${stillFocused}）`);
+
+  // 選んだ手ごたえ：指標の差（+12 など）が出る。数字キーで n 番目のカードを選べる
+  await page.keyboard.press('2');
+  const diffs = await page.locator('.meter__diff').count();
+  const byNumber = await page.locator('[data-focus-key="material-seat-shirakashi"]').getAttribute('aria-pressed');
+  if (diffs > 0 && byNumber === 'true') ok(`選ぶと指標の差が出る（${diffs}個）・数字キー 2 で2番目の材料を選べる`);
+  else problem(`手ごたえ・数字キーに問題（差:${diffs}, 数字キー:${byNumber}）`);
+  // 押せないボタンを押すと、ゆれて知らせる
+  await page.locator('[data-focus-key="step-5"]').click({ force: true });
+  const shaking = await page.locator('[data-focus-key="step-5"]').evaluate((el) => el.classList.contains('is-shaking'));
+  if (shaking) ok('押せないボタンを押すと、ゆれて知らせる');
+  else problem('押せないボタンを押しても何も起きない');
   await click(page, 'header-board');
 }
 

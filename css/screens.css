@@ -1191,6 +1191,65 @@
   animation: none !important;
 }
 
+/* 依頼達成の紙吹雪。星が出るのと同じ時刻に、星のあたりから広がって落ちる */
+.panel--evaluation {
+  position: relative;
+}
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  pointer-events: none;
+}
+
+.confetti__piece {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-burst 1.6s cubic-bezier(0.15, 0.7, 0.4, 1) both;
+  animation-delay: calc((var(--reveal-count) + 1) * var(--reveal-step) + var(--delay));
+}
+
+.confetti__piece--round {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.is-skipped .confetti {
+  display: none;
+}
+
+@keyframes confetti-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0) scale(0.4);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(var(--dx), var(--dy)) rotate(calc(var(--spin) * 0.3)) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * 1.2), calc(var(--dy) + var(--fall))) rotate(var(--spin)) scale(1);
+  }
+}
+
+/* 不合格のハンコは、押された瞬間に少しゆれる */
+.is-revealing .test-row--fail .test-row__badge {
+  animation: juice-shake 0.3s ease-out both;
+  animation-delay: calc(var(--i) * var(--reveal-step) + 0.2s);
+}
+
 @keyframes reveal-stamp {
   from {
     opacity: 0;

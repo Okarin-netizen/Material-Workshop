@@ -36,3 +36,11 @@ export const SAVE_VERSION = 1;
 
 /** 1つの依頼のステップ数（依頼を読む〜テストと結果） */
 export const STEP = Object.freeze({ read: 1, material: 2, process: 3, reinforce: 4, result: 5 });
+
+/**
+ * 操作の手ごたえ（js/ui/juice.js）と結果の紙吹雪（js/ui/screens/result.js）の調整用の数。
+ * minMeterDiff：指標がこれ以上変わったときだけ「+12」のような差を出す
+ * diffShowMs：差を出しておく時間（ミリ秒。css の meter-diff と合わせる）
+ * confetti：依頼達成のときの紙吹雪の枚数（星の数ごと）
+ */
+export const JUICE = Object.freeze({ minMeterDiff: 1, diffShowMs: 1100, confetti: Object.freeze([0, 14, 22, 36]) });

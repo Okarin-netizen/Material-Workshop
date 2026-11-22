@@ -1,9 +1,18 @@
 // 効果音。音のファイルは使わず、Web Audio でその場で短い音を作る（外部ファイルなしの方針のため）。
 // 教室で一斉に鳴らないよう、はじめは鳴らさない（ヘッダーの「音」で切りかえる）。
-// 鳴らすのは、プレイヤーにとって大事な順に「合格・不合格」「星」「称号」だけ。
+// 大事な順に「合格・不合格」「星」「称号」（結果画面）＞「選んだ・はずした・進んだ・押せない」（操作の手ごたえ）。
+// 操作の音は小さく短くして、結果の音より目立たないようにする。
 
 /** @type {AudioContext|null} */
 let context = null;
+
+/** 音を鳴らすかどうか。画面を描くたびに main.js が設定に合わせて変える */
+let enabled = false;
+
+/** @param {boolean} on */
+export function setSoundEnabled(on) {
+  enabled = Boolean(on);
+}
 
 function audio() {
   if (context) return context;
@@ -62,5 +71,42 @@ export function playResultSound({ tests, stars, newTitle }, step) {
   if (newTitle) {
     const at = afterTests + stars * 0.15 + 0.2;
     [523, 659, 784, 1047].forEach((frequency, index) => tone(frequency, at + index * 0.08, 0.35, 'triangle', 0.14));
+  }
+}
+
+/**
+ * 操作の手ごたえの音（結果の音より小さく短く）。音が「なし」のときは何もしない。
+ * select：カードを選んだ（ポッ）／ deselect：はずした（下がる音）／ step：次へ進んだ（ピコッ）
+ * blocked：押せないものを押した（ブブッ）／ on：音を「あり」にした（鳴ることを確かめる音）
+ * @param {'select'|'deselect'|'step'|'blocked'|'on'} kind
+ */
+export function playUiSound(kind) {
+  if (!enabled) return;
+  const ctx = audio();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  switch (kind) {
+    case 'select':
+      tone(660, 0, 0.06, 'triangle', 0.12);
+      tone(990, 0.04, 0.08, 'triangle', 0.1);
+      break;
+    case 'deselect':
+      tone(660, 0, 0.06, 'triangle', 0.1);
+      tone(440, 0.04, 0.08, 'triangle', 0.08);
+      break;
+    case 'step':
+      tone(784, 0, 0.06, 'square', 0.05);
+      tone(1175, 0.06, 0.1, 'square', 0.05);
+      break;
+    case 'blocked':
+      tone(147, 0, 0.08, 'square', 0.06);
+      tone(147, 0.11, 0.1, 'square', 0.06);
+      break;
+    case 'on':
+      tone(523, 0, 0.08, 'triangle', 0.12);
+      tone(784, 0.07, 0.12, 'triangle', 0.12);
+      break;
+    default:
+      break;
   }
 }
