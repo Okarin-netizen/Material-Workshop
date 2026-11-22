@@ -40,7 +40,7 @@ export function renderSummary(app) {
 }
 
 function renderSheetHeader(app) {
-  const cleared = app.data.requests.filter((request) => recordOf(app.progress, request.id).latestPassed).length;
+  const cleared = app.data.requests.filter((request) => recordOf(app.progress, request.id).bestPassed).length;
   const total = app.data.requests.length;
   return h(
     'header',
@@ -88,12 +88,14 @@ function renderRecordTable(app) {
 
 function renderRecordRow(app, request) {
   const record = recordOf(app.progress, request.id);
-  const shown = record.latestPassed;
+  // いちばんよかった設計を載せる。星は依頼ボードと同じ「最高の星」にして、表の合計と行の星をそろえる
+  // （v1.3.1 までの保存データでは、最高のときの設計が残っていないことがある）
+  const shown = record.bestPassed;
   return h(
     'tr',
     { class: shown ? '' : 'is-empty' },
     h('th', { scope: 'row' }, `${request.number}. `, request.title),
-    h('td', { class: 'record-table__stars' }, renderStars(shown ? shown.stars : 0)),
+    h('td', { class: 'record-table__stars' }, renderStars(record.bestStars)),
     h('td', {}, shown ? describeDesign(app, request, shown.design) : UI.summary.notCleared),
     // 生徒が書いた文なので、ふりがな記法を通さず textContent で入れる
     h('td', { class: 'record-table__reason', text: shown ? record.reason : '' }),

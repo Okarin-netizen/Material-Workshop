@@ -17,7 +17,8 @@ import { TITLES } from '../data/rewards.js';
  * @typedef {Object} RequestRecord 依頼ごとの記録
  * @property {number} bestStars           いちばんよかった星
  * @property {number} bestScore           いちばんよかった得点
- * @property {DesignRecord|null} latestPassed 最後に合格した設計（まとめ画面に載せる）
+ * @property {DesignRecord|null} latestPassed 最後に合格した設計（依頼をやり直すときは、この設計から始める）
+ * @property {DesignRecord|null} bestPassed   いちばん得点の高かった合格の設計（まとめ画面に載せる。同点なら新しいほう）
  * @property {string} reason              生徒が書いた「選んだ理由」
  */
 
@@ -65,7 +66,7 @@ export function createProgress() {
 
 /** @returns {RequestRecord} */
 function createRecord() {
-  return { bestStars: 0, bestScore: 0, latestPassed: null, reason: '' };
+  return { bestStars: 0, bestScore: 0, latestPassed: null, bestPassed: null, reason: '' };
 }
 
 /** 依頼の記録（なければ空の記録） */
@@ -228,7 +229,9 @@ function updatedRecord(record, design, evaluation) {
     bestScore: evaluation.allPassed ? Math.max(record.bestScore, evaluation.score) : record.bestScore,
   };
   if (evaluation.allPassed) {
-    updated.latestPassed = { design: structuredClone(design), score: evaluation.score, stars: evaluation.stars };
+    const passed = { design: structuredClone(design), score: evaluation.score, stars: evaluation.stars };
+    updated.latestPassed = passed;
+    if (!record.bestPassed || passed.score >= record.bestPassed.score) updated.bestPassed = structuredClone(passed);
   }
   return updated;
 }

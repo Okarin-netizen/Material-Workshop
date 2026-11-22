@@ -24,7 +24,7 @@ import { TITLES } from '../js/data/rewards.js';
 import { normalizeProgress } from '../js/core/storage.js';
 import { STEP, TEXT_LIMIT } from '../js/core/constants.js';
 import { ANSWERS } from './fixtures/answers.mjs';
-import { CATALOG, DATA, requestById } from './helpers.mjs';
+import { CATALOG, DATA, requestById, designOf } from './helpers.mjs';
 
 /** 答えのとおりに選んでテストまでする */
 function playAnswer(progress, request, answer) {
@@ -68,6 +68,30 @@ test('不合格のテストでは「最後に合格した設計」は変わら�
   const record = recordOf(progress, request.id);
   assert.equal(record.bestStars, 3);
   assert.equal(record.latestPassed.design.materials.seat, 'sugi');
+});
+
+test('★3のあとで★1の設計に合格し直しても、まとめに載せる設計は★3のまま', () => {
+  const request = requestById('parkBench');
+  let progress = playAnswer(createProgress(), request, ANSWERS.parkBench.model);
+  // 同じ設計から塗装だけ外してテストし直す（スギだが塗装なし＝★1〜2）
+  progress = runTest(toggleReinforcement(progress, request, CATALOG, 'paint'), request, CATALOG);
+  const record = recordOf(progress, request.id);
+  assert.equal(record.bestStars, 3);
+  assert.equal(record.bestPassed.stars, 3, 'まとめの行の星は最高の星と同じ');
+  assert.deepEqual(record.bestPassed.design, designOf(ANSWERS.parkBench.model));
+  assert.ok(record.latestPassed.stars < 3, 'やり直しの出発点は最後に合格した設計');
+  // 読み直しても変わらない
+  assert.deepEqual(normalizeProgress(JSON.parse(JSON.stringify(progress)), CATALOG).records, progress.records);
+});
+
+test('v1.3.1 までの保存データ（bestPassed がない）は、最後に合格した設計で代わりにする', () => {
+  const latest = { design: designOf(ANSWERS.parkBench.model), score: 90, stars: 3 };
+  const old = { version: 1, records: { parkBench: { bestStars: 3, bestScore: 90, latestPassed: latest, reason: 'スギにした' } } };
+  const record = normalizeProgress(old, CATALOG).records.parkBench;
+  assert.deepEqual(record.bestPassed, latest);
+  assert.deepEqual(record.latestPassed, latest);
+  assert.equal(record.reason, 'スギにした');
+  assert.equal(normalizeProgress({ version: 1, records: { parkBench: { bestStars: 0 } } }, CATALOG).records.parkBench.bestPassed, null);
 });
 
 test('職人ランクは見習いの依頼を2件達成すると開く。先生用の設定で全部開く', () => {

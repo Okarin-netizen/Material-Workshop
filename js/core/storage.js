@@ -82,7 +82,9 @@ function normalizeRecords(progress, records, catalog) {
   for (const [requestId, record] of Object.entries(records ?? {})) {
     const request = catalog.requests.get(requestId);
     if (!request || !record || typeof record !== 'object') continue;
-    const latest = record.latestPassed;
+    const latestPassed = normalizeDesignRecord(record.latestPassed, request, catalog);
+    // v1.3.1 までの保存データには bestPassed がないので、最後に合格した設計で代わりにする
+    const bestPassed = normalizeDesignRecord(record.bestPassed, request, catalog) ?? latestPassed;
     next = {
       ...next,
       records: {
@@ -90,9 +92,8 @@ function normalizeRecords(progress, records, catalog) {
         [requestId]: {
           bestStars: toInteger(record.bestStars, 0, 3),
           bestScore: toInteger(record.bestScore, 0, 100),
-          latestPassed: latest
-            ? { design: sanitizeDesign(request, latest.design, catalog), score: toInteger(latest.score, 0, 100), stars: toInteger(latest.stars, 0, 3) }
-            : null,
+          latestPassed,
+          bestPassed,
           reason: '',
         },
       },
@@ -100,6 +101,12 @@ function normalizeRecords(progress, records, catalog) {
     next = setReason(next, requestId, typeof record.reason === 'string' ? record.reason : '');
   }
   return next;
+}
+
+/** 保存されていた「テストした設計の記録」を今のデータに合わせて直す（なければ null） */
+function normalizeDesignRecord(saved, request, catalog) {
+  if (!saved || typeof saved !== 'object') return null;
+  return { design: sanitizeDesign(request, saved.design, catalog), score: toInteger(saved.score, 0, 100), stars: toInteger(saved.stars, 0, 3) };
 }
 
 function normalizeSession(session, catalog) {
