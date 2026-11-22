@@ -2,7 +2,7 @@
 
 import { h, fill, formatNumber } from '../dom.js';
 import { UI } from '../../data/uiText.js';
-import { STEP, TEXT_LIMIT } from '../../core/constants.js';
+import { STEP, TEXT_LIMIT, JUICE } from '../../core/constants.js';
 import { pickWhatIf, nextGoal } from '../../core/scoring.js';
 import { goToStep, recordOf, setReason, finishReveal, isZukanComplete } from '../../core/gameState.js';
 import { METRICS } from '../../data/traits.js';
@@ -41,7 +41,7 @@ export function renderResult(app, request, evaluation) {
       onClick: revealing ? (event) => event.currentTarget.classList.add('is-skipped') : null,
     },
     renderTestsPanel(app, request, evaluation),
-    renderEvaluationPanel(app, request, evaluation),
+    renderEvaluationPanel(app, request, evaluation, revealing),
     renderLearningPanel(app, request),
   );
 }
@@ -84,11 +84,12 @@ function renderTestRow(test, evaluation, index) {
 
 // ── 中央：評価（星・得点・レーダーチャート・図鑑に追加・依頼人のコメント） ──
 
-function renderEvaluationPanel(app, request, evaluation) {
+function renderEvaluationPanel(app, request, evaluation, revealing) {
   const comment = evaluation.allPassed ? request.comments[`star${evaluation.stars}`] : request.comments.failed;
   return h(
     'section',
     { class: 'panel panel--evaluation', 'aria-labelledby': 'evaluation-heading' },
+    revealing && evaluation.allPassed ? renderConfetti(evaluation.stars) : null,
     h('h2', { class: 'panel__heading', id: 'evaluation-heading' }, UI.result.evaluation),
     h(
       'div',
@@ -107,6 +108,34 @@ function renderEvaluationPanel(app, request, evaluation) {
     h('div', { class: 'radar-frame' }, renderRadarChart(evaluation.metrics)),
     h('div', { class: 'comment' }, renderClientArt(request.client.look, 48), h('p', { class: 'comment__text' }, comment)),
   );
+}
+
+/** 紙吹雪の色（ゲームの色に合わせる） */
+const CONFETTI_COLORS = ['#ff8a3d', '#ffd257', '#4fae45', '#3f74b0', '#d8481f', '#ffffff'];
+
+/**
+ * 依頼達成をほめる紙吹雪。星が出るのと同時に、星のあたりから広がって落ちる。星が多いほど多い。
+ * 見た目だけ（読み上げない・クリックを邪魔しない）。演出をとばしたら消える。
+ * @param {number} stars
+ */
+function renderConfetti(stars) {
+  const count = JUICE.confetti[stars] ?? 0;
+  const pieces = Array.from({ length: count }, (_, index) => {
+    const angle = (index / count) * Math.PI * 2 + Math.random() * 0.4;
+    const power = 70 + Math.random() * 90;
+    return h('i', {
+      class: index % 3 === 0 ? 'confetti__piece confetti__piece--round' : 'confetti__piece',
+      style: {
+        '--dx': `${Math.round(Math.cos(angle) * power)}px`,
+        '--dy': `${Math.round(Math.sin(angle) * power * 0.6 - 40)}px`,
+        '--fall': `${Math.round(160 + Math.random() * 140)}px`,
+        '--spin': `${Math.round(360 + Math.random() * 540) * (index % 2 ? 1 : -1)}deg`,
+        '--delay': `${(Math.random() * 0.12).toFixed(2)}s`,
+        background: CONFETTI_COLORS[index % CONFETTI_COLORS.length],
+      },
+    });
+  });
+  return h('div', { class: `confetti confetti--stars${stars}`, 'aria-hidden': 'true' }, pieces);
 }
 
 // ── 右：学びのポイント・もし別の材料だったら・選んだ理由・ボタン ──

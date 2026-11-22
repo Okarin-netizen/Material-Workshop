@@ -24,13 +24,14 @@ export function renderTitle(app) {
     h(
       'div',
       { class: 'title-card' },
-      h('h1', { class: 'title-logo', tabindex: '-1', dataset: { autofocus: 'true' } }, UI.appName),
+      h('h1', { class: 'title-logo' }, UI.appName),
       h('p', { class: 'title-lead' }, UI.title.lead),
       artRequest ? h('div', { class: 'title-art' }, renderProductArt(artRequest, TITLE_ART.design, app.catalog)) : null,
       h(
         'div',
         { class: 'title-buttons' },
-        h('button', { type: 'button', class: 'btn btn--primary btn--big', dataset: { focusKey: 'title-start' }, onClick: () => start(app) }, UI.title.start),
+        // はじめから「はじめる」にフォーカスを置き、Enter を押すだけで遊びはじめられるようにする
+        h('button', { type: 'button', class: 'btn btn--primary btn--big', dataset: { focusKey: 'title-start', autofocus: 'true' }, onClick: () => start(app) }, UI.title.start),
         h(
           'button',
           {

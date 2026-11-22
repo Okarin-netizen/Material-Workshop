@@ -15,6 +15,8 @@ import { loadProgress, saveProgress, clearProgress } from './core/storage.js';
 import { validateData } from './core/validateData.js';
 import { h } from './ui/dom.js';
 import { setFuriganaEnabled, plain } from './ui/components/ruby.js';
+import { setSoundEnabled } from './ui/sound.js';
+import { installJuice } from './ui/juice.js';
 import { renderHeader } from './ui/components/header.js';
 import { confirmDialog } from './ui/components/dialog.js';
 import { ART_DRAWERS } from './ui/art/index.js';
@@ -117,6 +119,7 @@ const app = {
 
 function render() {
   setFuriganaEnabled(app.progress.furigana);
+  setSoundEnabled(app.progress.sound);
   const focusKey = document.activeElement?.dataset?.focusKey;
   const root = document.getElementById('app');
   root.replaceChildren(...renderBanners(), renderHeader(app), SCREENS[app.screen](app));
@@ -145,7 +148,8 @@ function restoreFocus(focusKey) {
   if (changedView) {
     window.scrollTo(0, 0);
     const target = document.querySelector('[data-autofocus]') ?? document.querySelector('main h1, main h2');
-    target?.setAttribute('tabindex', '-1');
+    // 見出しはフォーカスできるようにする（ボタンは Tab の順番から外さないよう、そのまま）
+    if (target && target.tagName !== 'BUTTON') target.setAttribute('tabindex', '-1');
     target?.focus({ preventScroll: true });
     return;
   }
@@ -157,4 +161,5 @@ function restoreFocus(focusKey) {
 if (dataProblems.length) {
   console.error(`データの点検で ${dataProblems.length} 件の問題が見つかりました。\n${dataProblems.join('\n')}`);
 }
+installJuice();
 render();
