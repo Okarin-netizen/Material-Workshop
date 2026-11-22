@@ -76,9 +76,7 @@ function renderRequestCard(app, request, unlocked) {
       'aria-disabled': unlocked ? null : 'true',
       dataset: { focusKey: `request-${request.id}` },
       onClick: () => {
-        if (!unlocked) return;
-        app.update((progress) => startRequest(progress, request, app.catalog));
-        app.navigate('workshop');
+        if (unlocked) app.updateAndNavigate((progress) => startRequest(progress, request, app.catalog), 'workshop');
       },
     },
     h('span', { class: 'request-card__number' }, String(request.number)),

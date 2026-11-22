@@ -13,6 +13,7 @@ import { buildCatalog } from './core/rules.js';
 import { createProgress } from './core/gameState.js';
 import { loadProgress, saveProgress, clearProgress } from './core/storage.js';
 import { validateData } from './core/validateData.js';
+import { rememberScreen } from './core/navigation.js';
 import { h } from './ui/dom.js';
 import { setFuriganaEnabled, plain } from './ui/components/ruby.js';
 import { setSoundEnabled } from './ui/sound.js';
@@ -53,7 +54,8 @@ const SCREENS = {
  * @property {(change: (progress: any) => any) => void} update        進行状況を変えて、保存して、描き直す
  * @property {(change: (progress: any) => any) => void} updateQuietly 進行状況を変えて保存する（描き直さない。文字入力用）
  * @property {(screen: ScreenName) => void} navigate
- * @property {() => void} back
+ * @property {(change: (progress: any) => any, screen: ScreenName) => void} updateAndNavigate 進行状況を変えてから画面を移る（描き直しは1回）
+ * @property {() => void} back 1つ前の画面へ戻る（なければタイトル）
  * @property {(params: Record<string, any>) => void} setScreenParams
  * @property {() => Promise<void>} confirmReset
  */
@@ -62,7 +64,8 @@ const data = { materials: MATERIALS, processes: PROCESSES, reinforcements: REINF
 const catalog = buildCatalog(data);
 const dataProblems = validateData({ ...data, uiText: [UI, TITLES], changelog: CHANGELOG }, catalog, { artNames: Object.keys(ART_DRAWERS) });
 let saveWorks = true;
-let previousScreen = 'title';
+/** @type {ScreenName[]} これまでに通った画面（「もどる」で使う。同じ画面は1回だけ） */
+let screenHistory = [];
 let lastViewKey = '';
 
 /** @type {App} */
@@ -90,14 +93,20 @@ const app = {
   navigate(screen) {
     // 取り組み中の依頼がないのに作業画面へは行けないので、依頼ボードにする
     const target = screen === 'workshop' && !this.currentRequest() ? 'board' : screen;
-    if (target !== this.screen) previousScreen = this.screen;
+    screenHistory = rememberScreen(screenHistory, this.screen, target);
     this.screen = target;
     this.screenParams = {};
     render();
   },
 
+  updateAndNavigate(change, screen) {
+    this.updateQuietly(change);
+    this.navigate(screen);
+  },
+
   back() {
-    this.navigate(previousScreen === this.screen ? 'title' : previousScreen);
+    // 戻り先は履歴のいちばん後ろにあるので、navigate がそこまで巻き戻す
+    this.navigate(screenHistory.at(-1) ?? 'title');
   },
 
   setScreenParams(params) {
@@ -110,8 +119,8 @@ const app = {
     if (!ok) return;
     clearProgress();
     this.progress = createProgress();
-    previousScreen = 'title';
     this.navigate('title');
+    screenHistory = [];
   },
 };
 
@@ -123,6 +132,8 @@ function render() {
   const focusKey = document.activeElement?.dataset?.focusKey;
   const root = document.getElementById('app');
   root.replaceChildren(...renderBanners(), renderHeader(app), SCREENS[app.screen](app));
+  // 今の「場所」（画面とステップ）。juice.js も、画面が変わったかをこれで見分ける
+  root.dataset.view = `${app.screen}:${app.screen === 'workshop' ? (app.progress.session?.step ?? '') : ''}`;
   document.title = plain(UI.appName);
   restoreFocus(focusKey);
 }
@@ -142,7 +153,7 @@ function renderBanners() {
  * （キーボードで操作している人が、描き直しのたびに先頭へ戻されないようにするため）
  */
 function restoreFocus(focusKey) {
-  const viewKey = `${app.screen}:${app.progress.session?.step ?? ''}`;
+  const viewKey = document.getElementById('app').dataset.view;
   const changedView = viewKey !== lastViewKey;
   lastViewKey = viewKey;
   if (changedView) {

@@ -14,16 +14,27 @@ export function setSoundEnabled(on) {
   enabled = Boolean(on);
 }
 
+/** 音を作る AudioContext（はじめて鳴らすときに作る。使えない環境では null） */
 function audio() {
-  if (context) return context;
-  const AudioContextClass = globalThis.AudioContext ?? globalThis.webkitAudioContext;
-  if (!AudioContextClass) return null;
+  if (context || !globalThis.AudioContext) return context;
   try {
-    context = new AudioContextClass();
+    context = new AudioContext();
   } catch {
     context = null;
   }
   return context;
+}
+
+/**
+ * 鳴らしてよければ、止まっていた AudioContext を動かして返す。鳴らさないときは null。
+ * （ブラウザは、操作の前に作った AudioContext を止めておくことがある）
+ * @returns {AudioContext|null}
+ */
+function readyAudio() {
+  if (!enabled) return null;
+  const ctx = audio();
+  if (ctx?.state === 'suspended') ctx.resume().catch(() => {});
+  return ctx;
 }
 
 /**
@@ -53,13 +64,12 @@ function tone(frequency, start, length, type = 'triangle', volume = 0.18) {
 
 /**
  * テスト結果の音。演出（screens.css の --reveal-step）と同じ間隔で、テスト1つずつ鳴らしてから星を鳴らす。
+ * 音が「なし」のときは何もしない。
  * @param {{tests: {passed: boolean|null}[], stars: number, newTitle: boolean}} result
  * @param {number} step テスト1つあたりの秒数
  */
 export function playResultSound({ tests, stars, newTitle }, step) {
-  const ctx = audio();
-  if (!ctx) return;
-  if (ctx.state === 'suspended') ctx.resume();
+  if (!readyAudio()) return;
   tests.forEach((test, index) => {
     const at = (index + 1) * step;
     if (test.passed) tone(880, at, 0.12);
@@ -81,10 +91,7 @@ export function playResultSound({ tests, stars, newTitle }, step) {
  * @param {'select'|'deselect'|'step'|'blocked'|'on'} kind
  */
 export function playUiSound(kind) {
-  if (!enabled) return;
-  const ctx = audio();
-  if (!ctx) return;
-  if (ctx.state === 'suspended') ctx.resume();
+  if (!readyAudio()) return;
   switch (kind) {
     case 'select':
       tone(660, 0, 0.06, 'triangle', 0.12);
