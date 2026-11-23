@@ -35,6 +35,7 @@
 ## ファイル構成
 
 ```
+docs/requirements.md       目的・成功の目安・要求一覧（直す前に確かめる）
 index.html                 入口。CSS と js/main.js を読みこむだけ
 package.json               "type": "module" と、テスト用のスクリプト
 css/
