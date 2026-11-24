@@ -1,4 +1,5 @@
-// タイトル画面：ゲームの顔。ロゴ・作品のショーケース・工房の称号と、はじめる／つづきから／遊び方／最初からやり直す／このアプリについて（バージョン）。
+// タイトル画面：ゲームの顔。ロゴ・作品のショーケース・工房の称号と、はじめから／つづきから／遊び方／このアプリについて（バージョン）。
+// 「はじめから」は、記録があれば消してよいか確かめてから、依頼1を始める（app.restart）。
 //
 // 演出の方針（待たせない・押して何も起きないをなくす）：
 //   ・ロゴが1文字ずつはずんで出るのは、ページを開いて最初に出たときだけ（ふりがなの切りかえなどの描き直しでは出さない）。
@@ -12,7 +13,7 @@ import { TITLES } from '../../data/rewards.js';
 import { APP_VERSION } from '../../data/about.js';
 import { renderProductArt } from '../art/index.js';
 import { playUiSound } from '../sound.js';
-import { startRequest, totalStars, titleIndex, nextTitle } from '../../core/gameState.js';
+import { hasSavedPlay, totalStars, titleIndex, nextTitle } from '../../core/gameState.js';
 import { TITLE_SCREEN } from '../../core/constants.js';
 import { plain } from '../components/ruby.js';
 
@@ -50,8 +51,6 @@ function reducedMotion() {
  * @returns {HTMLElement}
  */
 export function renderTitle(app) {
-  const session = app.progress.session;
-  const resumeRequest = session ? app.catalog.requests.get(session.requestId) : null;
   const intro = !introShown && !reducedMotion();
   introShown = true;
 
@@ -66,34 +65,12 @@ export function renderTitle(app) {
       h('p', { class: 'title-lead' }, UI.title.lead),
       renderShowcase(app),
       renderRank(app),
-      h(
-        'div',
-        { class: 'title-buttons' },
-        // はじめから「はじめる」にフォーカスを置き、Enter を押すだけで遊びはじめられるようにする
-        h(
-          'button',
-          { type: 'button', class: 'btn btn--primary btn--big title-start', dataset: { focusKey: 'title-start', autofocus: 'true' }, onClick: () => start(app) },
-          UI.title.start,
-          h('small', { class: 'btn__note title-start__hint' }, UI.title.startHint),
-        ),
-        h(
-          'button',
-          {
-            type: 'button',
-            class: 'btn btn--sub btn--big',
-            'aria-disabled': resumeRequest ? null : 'true',
-            dataset: { focusKey: 'title-resume' },
-            onClick: () => resumeRequest && app.navigate('workshop'),
-          },
-          UI.title.resume,
-          resumeRequest ? h('small', { class: 'btn__note' }, fill(UI.title.resumeNote, { number: resumeRequest.number, title: resumeRequest.title })) : null,
-        ),
-        h('button', { type: 'button', class: 'btn btn--sub btn--big', dataset: { focusKey: 'title-howto' }, onClick: () => app.navigate('howto') }, UI.title.howto),
-      ),
+      renderMainButtons(app),
+      h('p', { class: 'title-autosave' }, UI.title.autoSave),
       h(
         'div',
         { class: 'title-links' },
-        h('button', { type: 'button', class: 'btn btn--text', dataset: { focusKey: 'title-reset' }, onClick: () => app.confirmReset() }, UI.title.reset),
+        h('button', { type: 'button', class: 'btn btn--text', dataset: { focusKey: 'title-howto' }, onClick: () => app.navigate('howto') }, UI.title.howto),
         h('button', { type: 'button', class: 'btn btn--text', dataset: { focusKey: 'title-about' }, onClick: () => app.navigate('about') }, UI.title.about),
       ),
       h('p', { class: 'title-version' }, fill(UI.title.version, { version: APP_VERSION })),
@@ -194,16 +171,52 @@ function renderRank(app) {
 }
 
 /**
- * 「はじめる」。はじめての人（記録も取り組み中の依頼もない）は、依頼ボードを飛ばして依頼1をすぐに始める。
- * 依頼1がそのまま遊び方の練習になっているので、最初の数分を説明や画面の移動に使わないようにする。
+ * 「はじめから」と「つづきから」。記録があれば「つづきから」を大きく（Enter だけで続けられる）、
+ * なければ「はじめから」を大きくする。大きいほうにフォーカスを置く。
  */
-function start(app) {
-  clearInterval(showcaseTimer);
-  const firstTime = Object.keys(app.progress.records).length === 0 && !app.progress.session;
-  const first = app.data.requests[0];
-  if (!firstTime || !first) {
-    app.navigate('board');
-    return;
-  }
-  app.updateAndNavigate((progress) => startRequest(progress, first, app.catalog), 'workshop');
+function renderMainButtons(app) {
+  const saved = hasSavedPlay(app.progress);
+  const session = app.progress.session;
+  const resumeRequest = session ? app.catalog.requests.get(session.requestId) : null;
+
+  const startButton = h(
+    'button',
+    {
+      type: 'button',
+      class: `btn btn--big ${saved ? 'btn--sub' : 'btn--primary title-main'}`,
+      dataset: saved ? { focusKey: 'title-start' } : { focusKey: 'title-start', autofocus: 'true' },
+      onClick: () => app.restart(),
+    },
+    UI.title.start,
+    h('small', { class: 'btn__note' }, saved ? UI.title.startNoteSaved : UI.title.startNote),
+  );
+
+  let resumeNote = UI.title.resumeNone;
+  if (resumeRequest) resumeNote = fill(UI.title.resumeNote, { number: resumeRequest.number, title: resumeRequest.title });
+  else if (saved) resumeNote = UI.title.resumeNoteBoard;
+
+  const resumeButton = h(
+    'button',
+    {
+      type: 'button',
+      class: `btn btn--big ${saved ? 'btn--primary title-main' : 'btn--sub'}`,
+      'aria-disabled': saved ? null : 'true',
+      dataset: saved ? { focusKey: 'title-resume', autofocus: 'true' } : { focusKey: 'title-resume' },
+      onClick: () => {
+        if (!saved) return;
+        // 取り組み中の依頼があればその続きへ、なければ依頼ボードへ
+        app.navigate(resumeRequest ? 'workshop' : 'board');
+      },
+    },
+    UI.title.resume,
+    h('small', { class: 'btn__note' }, resumeNote),
+  );
+
+  // 大きいほうを左に置く
+  return h(
+    'div',
+    { class: 'title-buttons' },
+    saved ? [resumeButton, startButton] : [startButton, resumeButton],
+    h('p', { class: 'title-enter-hint', 'aria-hidden': 'true' }, UI.title.enterHint),
+  );
 }

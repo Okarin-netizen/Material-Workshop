@@ -64,6 +64,30 @@ export function createProgress() {
   };
 }
 
+/**
+ * 消して困る記録があるか（タイトルで「つづきから」を出すか、「はじめから」で確認するか）。
+ * ふりがな・音などの設定だけなら、記録とは数えない。
+ * @param {Progress} progress
+ */
+export function hasSavedPlay(progress) {
+  return (
+    Boolean(progress.session) ||
+    Object.keys(progress.records).length > 0 ||
+    Object.values(progress.zukan).some((list) => list.length > 0) ||
+    progress.reflection.trim() !== ''
+  );
+}
+
+/**
+ * 「はじめから」：記録をすべて消した新しい進行状況。見え方の設定（ふりがな・音）だけは引きつぐ。
+ * （先生用の「すべての依頼を開く」は記録といっしょに戻す）
+ * @param {Progress} progress
+ * @returns {Progress}
+ */
+export function restartProgress(progress) {
+  return { ...createProgress(), furigana: progress.furigana, sound: progress.sound };
+}
+
 /** @returns {RequestRecord} */
 function createRecord() {
   return { bestStars: 0, bestScore: 0, latestPassed: null, bestPassed: null, reason: '' };

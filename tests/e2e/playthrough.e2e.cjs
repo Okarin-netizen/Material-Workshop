@@ -9,7 +9,7 @@
 //   ・コンソールエラーがない
 //   ・どの画面も横スクロールがない。設計台と結果は縦スクロールもない
 //   ・カードの中で文字が切れていない（パネルの外にはみ出す要素がない）
-//   ・ふりがな ON/OFF、再読み込み後の「つづきから」、キーボード操作
+//   ・ふりがな ON/OFF、再読み込み後の「つづきから」、ヘッダーの「タイトルへ」、「はじめから」の確認、キーボード操作
 //   ・まとめ画面の印刷レイアウト（PDF が A4 1枚）
 //   ・1024×600 とタッチ幅 800 で崩れない
 
@@ -169,11 +169,12 @@ async function playAllRequests(browser, ANSWERS, REQUESTS) {
 
   await shot(page, 'title');
   await checkLayout(page, 'タイトル', { fitHeight: true });
-  // はじめての「はじめる」は、依頼ボードを飛ばして依頼1が始まる
+  // 記録がないときは「つづきから」は押せず、「はじめから」は確かめずに依頼1をすぐ始める
+  if ((await page.locator('[data-focus-key="title-resume"]').getAttribute('aria-disabled')) !== 'true') problem('記録がないのに「つづきから」が押せる');
   await click(page, 'title-start');
   await page.locator('#choices-heading').waitFor();
-  if (!(await page.locator('.stage-pill').textContent()).includes('1')) problem('はじめての「はじめる」で依頼1が始まらない');
-  else ok('はじめての「はじめる」で依頼1がすぐ始まる');
+  if (!(await page.locator('.stage-pill').textContent()).includes('1')) problem('はじめての「はじめから」で依頼1が始まらない');
+  else ok('記録がないとき：「つづきから」は押せず、「はじめから」で依頼1がすぐ始まる');
   await shot(page, 'first-start');
   await click(page, 'header-board');
   await shot(page, 'board-start');
@@ -299,6 +300,20 @@ async function checkResume(page) {
   await click(page, 'request-stationBench');
   await click(page, 'next-step');
   await click(page, 'material-seat-glulam');
+  // ヘッダーの「タイトルへ」で、確かめずにタイトルへもどれる
+  await click(page, 'header-title');
+  const onTitle = await page.evaluate(() => document.getElementById('app').dataset.view === 'title:');
+  const resumeFocused = await page.evaluate(() => document.activeElement?.dataset?.focusKey === 'title-resume');
+  if (onTitle && resumeFocused) ok('「タイトルへ」でタイトルにもどり、「つづきから」にフォーカスがある');
+  else problem(`「タイトルへ」に問題（タイトル:${onTitle} つづきからにフォーカス:${resumeFocused}）`);
+  // 記録があるときの「はじめから」は確かめる。「やめる」なら何も消えない
+  await click(page, 'title-start');
+  const dialogShown = await page.locator('.confirm-dialog').isVisible();
+  await shot(page, 'restart-dialog');
+  await page.getByRole('button', { name: 'やめる' }).click();
+  const kept = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('material-koubou-v1')).records).length);
+  if (dialogShown && kept === 8) ok('記録があるときの「はじめから」は確認が出て、「やめる」なら記録が残る');
+  else problem(`「はじめから」の確認に問題（確認:${dialogShown} 残った記録:${kept}）`);
   await page.reload();
   const resume = page.locator('[data-focus-key="title-resume"]');
   if ((await resume.getAttribute('aria-disabled')) === 'true') problem('再読み込み後に「つづきから」が押せない');
@@ -315,11 +330,17 @@ async function checkResume(page) {
 async function checkKeyboard(page) {
   console.log('\n[キーボード操作]');
   await page.goto(BASE);
-  // タイトルを開いた時点で「はじめる」にフォーカスがあり、Enter だけで依頼ボードへ進める
-  let reached = await page.evaluate(() => document.activeElement?.dataset?.focusKey === 'title-start');
+  // 記録があるので、タイトルを開いた時点で「つづきから」にフォーカスがあり、Enter だけで続けられる
+  // （取り組み中の依頼がない状態にしてから開くので、依頼ボードへ進む）
+  await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem('material-koubou-v1'));
+    localStorage.setItem('material-koubou-v1', JSON.stringify({ ...saved, session: null }));
+  });
+  await page.reload();
+  let reached = await page.evaluate(() => document.activeElement?.dataset?.focusKey === 'title-resume');
   for (let i = 0; i < 12 && !reached; i += 1) {
     await page.keyboard.press('Tab');
-    reached = await page.evaluate(() => document.activeElement?.dataset?.focusKey === 'title-start');
+    reached = await page.evaluate(() => document.activeElement?.dataset?.focusKey === 'title-resume');
   }
   const outline = await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle);
   await page.keyboard.press('Enter');
@@ -333,7 +354,7 @@ async function checkKeyboard(page) {
   await page.keyboard.press('Space');
   const inWorkshop = await page.locator('#choices-heading').count();
   if (reached && outline !== 'none' && onBoard.includes('ボード') && onCard && inWorkshop) ok('Tab で移動し Enter / Space で操作できる（フォーカスの枠あり）');
-  else problem(`キーボード操作に問題（はじめる:${reached} 枠:${outline} 依頼カード:${onCard} 作業画面:${inWorkshop}）`);
+  else problem(`キーボード操作に問題（つづきから:${reached} 枠:${outline} 依頼カード:${onCard} 作業画面:${inWorkshop}）`);
   // 設計中でも Enter で材料を選べる
   await page.keyboard.press('Tab');
   await page.locator('[data-focus-key="next-step"]').focus();
@@ -419,6 +440,14 @@ async function checkOtherSizes(browser, ANSWERS, REQUESTS, { width, height, touc
   await page.locator('[data-focus-key="board-reset"]').click();
   await shot(page, `reset-dialog-${label}`);
   await page.getByRole('button', { name: 'やめる' }).click();
+  // 「はじめから」で記録を消すと、依頼1がすぐ始まる（ふりがなの設定は残る）
+  await click(page, 'header-title');
+  await click(page, 'title-start');
+  await page.locator('.confirm-dialog .btn--danger').click();
+  await page.locator('#choices-heading').waitFor();
+  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('material-koubou-v1')));
+  if (Object.keys(after.records).length === 0 && after.session?.requestId === 'parkBench') ok(`${label}：「はじめから」で記録が消え、依頼1が始まる`);
+  else problem(`${label}：「はじめから」のあとが正しくない（記録 ${Object.keys(after.records).length} 件, 依頼 ${after.session?.requestId}）`);
   ok(`${label}：画面を一通り表示`);
   await context.close();
 }

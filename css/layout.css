@@ -132,6 +132,27 @@
     min-height: 0;
     overflow: hidden;
   }
+
+  /* ヘッダーは1行に収める（2行になると設計台が下で切れる）。足りないときは依頼の名前を「…」で縮める */
+  .app-header {
+    flex-wrap: nowrap;
+  }
+
+  .header-nav {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+  }
+}
+
+/* 横1024〜1279 くらいでは、ヘッダーのボタンを少し詰める */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .header-nav {
+    gap: 6px;
+  }
+
+  .header-btn {
+    padding-inline: 10px;
+  }
 }
 
 /* 小さい画面：縦に積む */
