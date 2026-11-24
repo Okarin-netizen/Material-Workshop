@@ -203,19 +203,33 @@
   gap: 12px;
 }
 
-/* 「はじめる」はいちばん大きく、光の輪でさそう */
-.title-start {
+.title-buttons .btn--big {
   min-width: 220px;
+}
+
+/* 大きいほう（記録がなければ「はじめから」、あれば「つづきから」）は、光の輪でさそう */
+.title-main {
   font-size: 22px;
   animation: title-glow 2s ease-in-out 1s infinite;
 }
 
-.title-start:hover {
+.title-main:hover {
   transform: translateY(-2px);
 }
 
-.title-start__hint {
-  opacity: 0.9;
+.title-enter-hint {
+  flex-basis: 100%;
+  margin-top: -6px;
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.title-autosave {
+  max-width: 34em;
+  color: var(--text-sub);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .title-links {
@@ -361,7 +375,7 @@
 
 /* タッチの端末には Enter キーの案内はいらない */
 @media (hover: none) and (pointer: coarse) {
-  .title-start__hint {
+  .title-enter-hint {
     display: none;
   }
 }
@@ -371,7 +385,7 @@
     font-size: 38px;
   }
 
-  .title-start {
+  .title-buttons .btn--big {
     min-width: 0;
   }
 
@@ -387,5 +401,11 @@
 
   .title-showcase__stage {
     max-height: 16vh;
+  }
+
+  /* 低い画面では、案内の2行を出さずに1画面に収める（「つづきから」の小さい字で続きがわかる） */
+  .title-enter-hint,
+  .title-autosave {
+    display: none;
   }
 }

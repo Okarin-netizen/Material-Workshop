@@ -19,6 +19,10 @@ import {
   titleIndex,
   nextTitle,
   totalStars,
+  hasSavedPlay,
+  restartProgress,
+  setFurigana,
+  setSound,
 } from '../js/core/gameState.js';
 import { TITLES } from '../js/data/rewards.js';
 import { normalizeProgress } from '../js/core/storage.js';
@@ -207,4 +211,24 @@ test('読み込んだ途中の依頼は、その設計で入れるステップ�
   progress = normalizeProgress(saved({ step: STEP.result, tested: true, design: model }), CATALOG);
   assert.equal(progress.session.tested, true);
   assert.equal(progress.session.step, STEP.result);
+});
+
+test('タイトルの「つづきから」：設定だけなら記録なし、依頼を始めたら記録あり', () => {
+  let progress = setSound(setFurigana(createProgress(), false), true);
+  assert.equal(hasSavedPlay(progress), false, 'ふりがな・音の設定だけでは記録と数えない');
+  progress = startRequest(progress, DATA.requests[0], CATALOG);
+  assert.equal(hasSavedPlay(progress), true, '取り組み中の依頼があれば記録あり');
+  assert.equal(hasSavedPlay({ ...createProgress(), reflection: 'ふり返り' }), true, 'ふり返りだけでも記録あり');
+});
+
+test('「はじめから」：記録を消して、ふりがな・音の設定は引きつぐ', () => {
+  let progress = setSound(setFurigana(createProgress(), false), true);
+  progress = setUnlockAll(progress, true);
+  progress = playAnswer(progress, DATA.requests[0], ANSWERS[DATA.requests[0].id].model);
+  assert.equal(hasSavedPlay(progress), true);
+  const fresh = restartProgress(progress);
+  assert.equal(hasSavedPlay(fresh), false);
+  assert.equal(fresh.furigana, false);
+  assert.equal(fresh.sound, true);
+  assert.equal(fresh.unlockAll, false, '先生用の「すべての依頼を開く」は戻す');
 });

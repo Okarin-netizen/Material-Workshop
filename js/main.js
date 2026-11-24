@@ -10,7 +10,7 @@ import { UI } from './data/uiText.js';
 import { CHANGELOG } from './data/about.js';
 import { TITLES } from './data/rewards.js';
 import { buildCatalog } from './core/rules.js';
-import { createProgress } from './core/gameState.js';
+import { createProgress, hasSavedPlay, restartProgress, startRequest } from './core/gameState.js';
 import { loadProgress, saveProgress, clearProgress } from './core/storage.js';
 import { validateData } from './core/validateData.js';
 import { rememberScreen } from './core/navigation.js';
@@ -58,6 +58,7 @@ const SCREENS = {
  * @property {() => void} back 1つ前の画面へ戻る（なければタイトル）
  * @property {(params: Record<string, any>) => void} setScreenParams
  * @property {() => Promise<void>} confirmReset
+ * @property {() => Promise<void>} restart タイトルの「はじめから」。記録があれば確かめてから消し、依頼1を始める
  */
 
 const data = { materials: MATERIALS, processes: PROCESSES, reinforcements: REINFORCEMENTS, requests: REQUESTS, ranks: RANKS };
@@ -121,6 +122,21 @@ const app = {
     this.progress = createProgress();
     this.navigate('title');
     screenHistory = [];
+  },
+
+  async restart() {
+    // 記録があるときだけ確かめる（まちがえて押しても、前の記録が消えないように）
+    if (hasSavedPlay(this.progress)) {
+      const ok = await confirmDialog({ title: UI.dialog.restartTitle, body: UI.dialog.restartBody, yes: UI.dialog.restartYes, no: UI.dialog.cancel });
+      if (!ok) return;
+    }
+    const first = data.requests[0];
+    screenHistory = [];
+    // 依頼1がそのまま遊び方の練習になっているので、依頼ボードを飛ばしてすぐに始める
+    this.updateAndNavigate((progress) => {
+      const fresh = restartProgress(progress);
+      return first ? startRequest(fresh, first, catalog) : fresh;
+    }, first ? 'workshop' : 'board');
   },
 };
 

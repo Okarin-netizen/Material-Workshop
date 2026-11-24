@@ -1,4 +1,4 @@
-// 全画面共通のヘッダー：ロゴ、取り組み中の依頼、ふりがな切りかえ、依頼ボード・図鑑・まとめ。
+// 全画面共通のヘッダー：ロゴ、取り組み中の依頼、ふりがな切りかえ、依頼ボード・図鑑・まとめ・タイトルへ。
 
 import { h, fill } from '../dom.js';
 import { UI } from '../../data/uiText.js';
@@ -41,6 +41,8 @@ export function renderHeader(app) {
       navButton(app, 'board', UI.header.board),
       navButton(app, 'zukan', fill(UI.header.zukanCount, { count: zukanCount, total: zukanTotal })),
       navButton(app, 'summary', UI.header.summary),
+      // タイトルにいるときは出さない。進み具合は自動で保存されるので、確かめずにすぐもどる
+      app.screen === 'title' ? null : navButton(app, 'title', UI.header.title),
     ),
   );
 }
